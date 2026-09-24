@@ -184,11 +184,11 @@ function cardHtml(l) {
 
 /* ===== Статистика: качество принятых законов по годам/месяцам ===== */
 function renderStats(board) {
-  const acts = LAWS.filter(l => l.st === "Опубликован (действует)" && l.y && match(l));
+  const acts = LAWS.filter(l => l.st === "Опубликован (действует)" && l.y && match(l) && l.a !== "unknown");
   const byYear = {};
   for (const l of acts) {
     byYear[l.y] = byYear[l.y] || {anti: 0, pro: 0};
-    byYear[l.y][l.a === "pro" ? "pro" : "anti"]++;
+    byYear[l.y][l.a]++;
   }
   const lastYear = Math.max(...Object.keys(byYear).map(Number));
   const byMonth = {};
@@ -196,7 +196,7 @@ function renderStats(board) {
     if (l.y !== lastYear || !l.d) continue;
     const m = +l.d.slice(3, 5);
     byMonth[m] = byMonth[m] || {anti: 0, pro: 0};
-    byMonth[m][l.a === "pro" ? "pro" : "anti"]++;
+    byMonth[m][l.a]++;
   }
   const years = Object.keys(byYear).sort((a, b) => b - a);
   const maxY = Math.max(1, ...years.map(y => byYear[y].anti + byYear[y].pro));
