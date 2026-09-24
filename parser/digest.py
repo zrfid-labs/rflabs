@@ -115,10 +115,19 @@ def main():
         m = re.match(r"(\d{2})\.(\d{2})\.(\d{4})", l.get("d", ""))
         return int(m.group(3) + m.group(2) + m.group(1)) if m else 0
 
-    vis = sorted((l for l in laws if l["a"] in ("anti", "pro") and l["n"] not in digests),
-                 key=fresh, reverse=True)
+    def prio(l):
+        # 0 — в работе (скоро станут законами), 1 — действует, 2 — внесён/архив
+        if l["st"] in ("На рассмотрении", "Принят Госдумой", "Совет Федерации", "У Президента"):
+            return 0
+        if l["st"] == "Опубликован (действует)":
+            return 1
+        return 2
+    vis = [l for l in laws if l["a"] in ("anti", "pro") and l["n"] not in digests]
+    vis.sort(key=lambda l: (prio(l), -fresh(l)))
     todo = vis[: args.max_bills]
-    print(f"к разбору: {len(todo)} (всего anti/pro без разбора: {len(vis)})")
+    from collections import Counter
+    by_group = Counter(prio(l) for l in todo)
+    print(f"к разбору: {len(todo)} (в работе: {by_group[0]}, действует: {by_group[1]}, прочее: {by_group[2]})")
 
     err = 0
     for i, l in enumerate(todo):
