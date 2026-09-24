@@ -30,6 +30,9 @@ jobs:
       - name: Классифицировать (правила + LLM-метки + разборы)
         run: python parser/classify.py
 
+      - name: RSS-фид новых анти-законов
+        run: python parser/make_feed.py
+
       - name: Проверка целостности сайта
         run: |
           test -s index.html || (echo "БЕДА: index.html пуст!" && exit 1)
@@ -48,7 +51,7 @@ jobs:
         run: |
           git config user.name "laws-bot"
           git config user.email "actions@users.noreply.github.com"
-          git add data/laws_raw.json data/laws.json data/meta.json data/llm_labels.json data/digests.json
+          git add data/ feed.xml
           if git diff --cached --quiet; then
             echo "Данные не изменились"
           else
