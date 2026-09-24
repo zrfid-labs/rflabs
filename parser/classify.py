@@ -86,14 +86,22 @@ def stage_of(bill):
 
 
 def score(text, rules):
+    """Оценка + выжимки: кусок текста вокруг сработавшего места, не просто слово."""
+    scored = []
     total = 0
-    hits = []
     for rx, w in rules:
         m = rx.search(text)
         if m:
             total += w
-            hits.append(m.group(0).lower()[:40])
-    return total, hits
+            s = max(0, m.start() - 45)
+            snip = re.sub(r"\s+", " ", text[s:m.end() + 55]).strip()
+            if s > 0:
+                snip = "…" + snip
+            if m.end() + 55 < len(text):
+                snip += "…"
+            scored.append((w, snip))
+    scored.sort(key=lambda x: -x[0])
+    return total, [snip for _, snip in scored]
 
 
 def classify(bill):

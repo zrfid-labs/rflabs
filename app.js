@@ -10,6 +10,7 @@ const shown = {};       // счётчик доп. карточек на коло
 let graphRAF = null;    // анимация сетки
 
 const STAGE_ORDER = ["Внесён","На рассмотрении","Принят Госдумой","Совет Федерации","У Президента","Опубликован (действует)","Архив"];
+const STAGE_COLORS = {"Опубликован (действует)":"var(--green)","У Президента":"var(--blue)","Совет Федерации":"var(--blue)","Принят Госдумой":"var(--acc)","На рассмотрении":"var(--grey)","Внесён":"var(--grey)","Архив":"var(--line)"};
 
 async function load() {
   const meta = await fetch("data/meta.json").then(r => r.json()).catch(() => ({}));
@@ -94,11 +95,12 @@ function render() {
   const groups = groupLaws();
   board.innerHTML = `<div class="board">` + groups.map(([k, laws]) => {
     const id = view + "|" + k;
+    const colc = view === "stage" ? (STAGE_COLORS[k] || "var(--grey)") : "var(--acc)";
     const limit = PAGE + (shown[id] || 0);
     laws.sort((a, b) => dkey(b) - dkey(a));
     const cards = laws.slice(0, limit).map(cardHtml).join("");
     const rest = laws.length - limit;
-    return `<div class="col">
+    return `<div class="col" style="--colc:${colc}">
       <h3><span>${esc(k)}</span><span class="cnt">${laws.length.toLocaleString("ru")}</span></h3>
       <div class="cards">${cards}
         ${rest > 0 ? `<button class="morebtn" data-g="${esc(id)}">показать ещё (${rest.toLocaleString("ru")})</button>` : ""}
@@ -243,35 +245,72 @@ function drawForceGraph(canvas, G) {
     }
   }
 
+  // вьюпорт как в Obsidian: зум колесом, панорама перетаскиванием
+  const vp = {z: 1, x: 0, y: 0};
+  const toWorld = (px, py) => [(px - vp.x) / vp.z, (py - vp.y) / vp.z];
+  let drag = null, moved = false, hover = null;
+
   function draw() {
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, W, H);
-    ctx.strokeStyle = "rgba(140,155,175,0.16)";
-    ctx.lineWidth = 1;
+    ctx.setTransform(vp.z, 0, 0, vp.z, vp.x, vp.y);
+    ctx.strokeStyle = "rgba(140,155,175,0.13)";
+    ctx.lineWidth = 1 / vp.z;
     ctx.beginPath();
     for (const [a, b] of G.edges) {
       ctx.moveTo(nodes[a].x, nodes[a].y);
       ctx.lineTo(nodes[b].x, nodes[b].y);
     }
     ctx.stroke();
-    ctx.font = "bold 12px system-ui";
+    ctx.font = "bold 12px Inter, system-ui";
     ctx.textBaseline = "middle";
     for (const h of hubs) {
-      const label = h.h.label.length > 46 ? h.h.label.slice(0, 45) + "…" : h.h.label;
-      ctx.fillStyle = "rgba(11,14,19,0.75)";
+      const label = h.h.label.length > 42 ? h.h.label.slice(0, 41) + "…" : h.h.label;
       const w = ctx.measureText(label).width;
+      ctx.fillStyle = "rgba(11,14,19,0.72)";
       ctx.fillRect(h.x - 5, h.y - 9, w + 10, 18);
-      ctx.fillStyle = "var(--acc, #e8a33d)";
-      ctx.fillStyle = "#e8a33d";
+      ctx.fillStyle = "#c9973a";
       ctx.fillText(label, h.x, h.y);
     }
     ctx.textBaseline = "alphabetic";
     for (const n of nodes) {
-      const r = 3 + (n.deg / maxDeg) * 7;
+      const r = (2.6 + (n.deg / maxDeg) * 6.5) * (n === hover ? 1.6 : 1);
       ctx.fillStyle = n.col;
+      ctx.globalAlpha = hover && n !== hover ? 0.55 : 1;
       ctx.beginPath();
       ctx.arc(n.x, n.y, r, 0, 7);
       ctx.fill();
+      ctx.globalAlpha = 1;
     }
+    // подсказка поверх, в экранных координатах
+    if (hover) {
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      const tw = Math.min(W - 20, 430);
+      const lines = wrap(ctx, audMark(hover.l) + " " + hover.l.t, tw - 16);
+      const hgt = 12 + lines.length * 15;
+      const bx = Math.min(hover.sx + 14, W - tw - 6), by = Math.max(4, hover.sy - 12);
+      ctx.fillStyle = "rgba(14,17,22,0.96)";
+      ctx.strokeStyle = "rgba(140,155,175,0.45)";
+      ctx.beginPath();
+      ctx.roundRect(bx, by, tw, hgt, 6);
+      ctx.fill(); ctx.stroke();
+      ctx.fillStyle = "#e8edf4";
+      lines.forEach((ln, i) => ctx.fillText(ln, bx + 8, by + 16 + i * 15));
+    }
+  }
+
+  function pick(e) {
+    const rect = canvas.getBoundingClientRect();
+    const px = (e.clientX - rect.left) * (W / rect.width);
+    const py = (e.clientY - rect.top) * (H / rect.height);
+    const [x, y] = toWorld(px, py);
+    let best = null, bd = 160 / vp.z;
+    for (const n of nodes) {
+      const d = (n.x - x) ** 2 + (n.y - y) ** 2;
+      if (d < bd) { bd = d; best = n; }
+    }
+    if (best) { best.sx = px; best.sy = py; }
+    return {n: best, px, py};
   }
 
   function loop() {
@@ -281,41 +320,41 @@ function drawForceGraph(canvas, G) {
   }
   loop();
 
-  canvas.addEventListener("mousemove", e => {
+  canvas.addEventListener("wheel", e => {
+    e.preventDefault();
     const rect = canvas.getBoundingClientRect();
-    const x = (e.clientX - rect.left) * (W / rect.width);
-    const y = (e.clientY - rect.top) * (H / rect.height);
-    let best = null, bd = 144;
-    for (const n of nodes) {
-      const d = (n.x - x) ** 2 + (n.y - y) ** 2;
-      if (d < bd) { bd = d; best = n; }
+    const px = (e.clientX - rect.left) * (W / rect.width);
+    const py = (e.clientY - rect.top) * (H / rect.height);
+    const k = e.deltaY < 0 ? 1.12 : 1 / 1.12;
+    const nz = Math.max(0.35, Math.min(5, vp.z * k));
+    const f = nz / vp.z;
+    vp.x = px - (px - vp.x) * f;
+    vp.y = py - (py - vp.y) * f;
+    vp.z = nz;
+  }, {passive: false});
+
+  canvas.addEventListener("mousedown", e => {
+    const p = pick(e);
+    drag = {px: p.px, py: p.py};
+    moved = false;
+  });
+  window.addEventListener("mouseup", () => { drag = null; });
+  canvas.addEventListener("mousemove", e => {
+    const p = pick(e);
+    if (drag) {
+      const dx = p.px - drag.px, dy = p.py - drag.py;
+      if (Math.abs(dx) + Math.abs(dy) > 3) moved = true;
+      vp.x += dx; vp.y += dy;
+      drag = {px: p.px, py: p.py};
+      return;
     }
-    draw();
-    if (best) {
-      ctx.fillStyle = "rgba(14,17,22,0.92)";
-      const tw = Math.min(W - 20, 420);
-      const lines = wrap(ctx, `${audMark(best.l)} ${best.l.t}`, tw - 16);
-      const hgt = 14 + lines.length * 15;
-      const bx = Math.min(x + 12, W - tw - 6);
-      ctx.fillStyle = "rgba(14,17,22,0.95)";
-      ctx.strokeStyle = "rgba(140,155,175,0.4)";
-      ctx.beginPath();
-      ctx.roundRect(bx, y - 10, tw, hgt, 6);
-      ctx.fill(); ctx.stroke();
-      ctx.fillStyle = "#e8edf4";
-      lines.forEach((ln, i) => ctx.fillText(ln, bx + 8, y + 8 + i * 15));
-    }
+    hover = p.n;
+    canvas.style.cursor = p.n ? "pointer" : "grab";
   });
   canvas.addEventListener("click", e => {
-    const rect = canvas.getBoundingClientRect();
-    const x = (e.clientX - rect.left) * (W / rect.width);
-    const y = (e.clientY - rect.top) * (H / rect.height);
-    for (const n of nodes) {
-      if ((n.x - x) ** 2 + (n.y - y) ** 2 < 144) {
-        window.open(billUrl(n.l), "_blank", "noopener");
-        return;
-      }
-    }
+    if (moved) return;
+    const p = pick(e);
+    if (p.n) window.open(billUrl(p.n.l), "_blank", "noopener");
   });
 }
 
