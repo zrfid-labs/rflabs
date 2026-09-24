@@ -50,7 +50,7 @@ def main():
              f"на рассмотрении/внесено: <b>{len(fresh_anti)}</b>", ""]
     for l in top:
         why = (l.get("w") or [""])[0]
-        lines.append(f"⚡️ <a href=\"{l['u']}\">{l['n']}</a> — {l['t'][:90]}")
+        lines.append(f"⚡️ <a href=\"https://sozd.duma.gov.ru/bill/{l['n']}\">{l['n']}</a> — {l['t'][:90]}")
         if why:
             lines.append(f"<i>{why[:80]}</i>")
         lines.append("")
