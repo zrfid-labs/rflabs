@@ -32,6 +32,8 @@ RULES = load_json("rules.json")
 OVERRIDES = load_json("overrides.json") if os.path.exists(os.path.join(HERE, "overrides.json")) else {}
 LABELS_PATH = os.path.join(ROOT, "data", "llm_labels.json")
 LABELS = json.load(open(LABELS_PATH, encoding="utf-8")) if os.path.exists(LABELS_PATH) else {}
+DIGEST_PATH = os.path.join(ROOT, "data", "digests.json")
+DIGESTS = json.load(open(DIGEST_PATH, encoding="utf-8")) if os.path.exists(DIGEST_PATH) else {}
 
 
 def compile_rules(rules):
@@ -196,6 +198,7 @@ def main():
             "tp": topic,
             "w": hits[:3],
             "b": base_of(b),
+            "dg": DIGESTS.get(b["number"]) or "",
         })
     meta = {
         "updated": __import__("datetime").datetime.now().isoformat(timespec="seconds"),

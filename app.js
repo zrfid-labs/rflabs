@@ -124,11 +124,13 @@ function cardHtml(l) {
     ? `<div class="why">${l.a === "anti" ? "⚡ против людей: " : "💚 за людей: "}${l.w.map(w => esc(w)).join(" · ")}</div>`
     : "";
   const note = l.c ? `<div class="note">${esc(l.c)}</div>` : "";
+  const digest = l.dg ? `<div class="dg">${l.dg.split(/\n+/).map(p => `<p>${esc(p)}</p>`).join("")}</div>` : "";
   return `<div class="card ${l.a}">
      <div class="crow"><span class="num"><a href="${billUrl(l)}" target="_blank" rel="noopener">${esc(l.n)}</a></span><span class="dt">${esc(l.d)}</span><span class="mark">${audMark(l)}</span></div>
      <div class="t">${esc(l.t)}</div>
      ${why}${note}
      <div class="more">${esc(l.ev || "")}${l.ed ? " · " + esc(l.ed) : ""}${l.i ? "<br>инициатор: " + esc(l.i) : ""}</div>
+     ${digest}
      <a class="ext" href="${billUrl(l)}" target="_blank" rel="noopener">карточка в Госдуме →</a>
      <span class="tp">${esc(l.tp)}</span>
    </div>`;
