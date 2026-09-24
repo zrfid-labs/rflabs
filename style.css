@@ -110,6 +110,8 @@ code{background:var(--card);padding:1px 6px;border-radius:6px}
 .ctitle .cl{color:var(--mut);font-weight:400;font-size:12px}
 .yrow{display:flex;align-items:flex-end;gap:3px;height:130px;margin-bottom:6px}
 .ycol{flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;height:100%;min-width:0}
+.xlabels{display:flex;padding-left:36px;padding-right:12px}
+.xlabels span{flex:1;text-align:center;font-size:9px;color:var(--mut);white-space:nowrap}
 .ybar{display:flex;flex-direction:column;justify-content:flex-end;width:100%;max-width:22px;height:100%;background:#0b0e13;border-radius:4px 4px 0 0;overflow:hidden}
 .yseg{display:block;width:100%}
 .yseg.anti{background:var(--red)}

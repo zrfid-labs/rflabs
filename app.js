@@ -193,7 +193,7 @@ function yearChartHtml() {
   }
   const years = Object.keys(byYear).sort((a, b) => a - b);
   if (years.length < 2) return "";
-  const W = 1000, H = 240, PADL = 36, PADR = 12, PADT = 14, PADB = 26;
+  const W = 1000, H = 230, PADL = 36, PADR = 12, PADT = 14, PADB = 12;
   const max = Math.max(4, ...years.map(y => byYear[y].anti + byYear[y].pro));
   const x = i => PADL + i * (W - PADL - PADR) / (years.length - 1);
   const y = v => H - PADB - v * (H - PADT - PADB) / max;
@@ -202,8 +202,6 @@ function yearChartHtml() {
     `<circle cx="${x(i).toFixed(1)}" cy="${y(byYear[yr][key]).toFixed(1)}" r="3" fill="${key === "anti" ? "#e05555" : "#43b581"}"><title>${yr}: 🔴 ${byYear[yr].anti} / 🟢 ${byYear[yr].pro}</title></circle>`).join("");
   const grid = [0.25, 0.5, 0.75, 1].map(f =>
     `<line x1="${PADL}" x2="${W - PADR}" y1="${y(max * f)}" y2="${y(max * f)}" stroke="rgba(140,155,175,0.15)"/><text x="4" y="${y(max * f) + 4}" fill="#8b98a9" font-size="10">${Math.round(max * f)}</text>`).join("");
-  const ylabels = years.map((yr, i) =>
-    `<text x="${x(i)}" y="${H - 8}" fill="#8b98a9" font-size="8.5" text-anchor="end" transform="rotate(-45 ${x(i)} ${H - 8})">${yr}</text>`).join("");
   const lastYear = years[years.length - 1];
   return `<div class="statwrap">
     <div class="clegend"><b>📊 Принятые и действующие законы по годам</b>
@@ -215,8 +213,8 @@ function yearChartHtml() {
       <path d="${line("pro")}" fill="none" stroke="#43b581" stroke-width="2.2"/>
       ${dots("anti")}${dots("pro")}
       <line x1="${PADL}" x2="${W - PADR}" y1="${H - PADB}" y2="${H - PADB}" stroke="rgba(140,155,175,0.4)"/>
-      ${ylabels}
     </svg>
+    <div class="xlabels">${years.map(yr => `<span>${String(yr).slice(2)}</span>`).join("")}</div>
   </div>`;
 }
 
