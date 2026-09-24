@@ -1,0 +1,2 @@
+https://rosstat.gov.ru/folder/11149 -> HTTP 404, 680635 байт
+https://rosstat.gov.ru/storage/mediabank/ -> HTTP 200, 76533 байт
