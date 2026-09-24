@@ -125,11 +125,13 @@ def main():
             print(f"  [{i//args.batch + 1}] +{len(got)}/{len(batch)} меток", flush=True)
         except Exception as e:
             err += 1
-            print(f"  [{i//args.batch + 1}] ошибка: {e}", flush=True)
-            if err >= 5:
-                print("слишком много ошибок подряд — сохраняюсь и выхожу")
+            wait = min(240, 30 * 2 ** (err - 1))   # 30с -> 1м -> 2м -> 4м
+            print(f"  [{i//args.batch + 1}] ошибка: {e} — ждём {wait}с", flush=True)
+            if err >= 8:
+                print("8 ошибок подряд — сохраняюсь и выхожу")
                 break
-            time.sleep(args.sleep * 3)
+            time.sleep(wait)
+            continue
         # сохраняемся после каждой партии — устойчиво к падениям
         with open(labels_path, "w", encoding="utf-8") as f:
             json.dump(labels, f, ensure_ascii=False)
