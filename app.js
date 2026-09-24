@@ -173,92 +173,105 @@ function drawClusterGraph(canvas, G) {
   const ctx = canvas.getContext("2d");
   const W = canvas.width, H = canvas.height;
 
-  // --- раскладка: созвездия на сетке, размер ячейки по самому крупному ---
-  const cell = Math.max(...G.clusters.map(c => c.bills.length)) * 9 + 150;
+  // --- раскладка: созвездия на сетке ---
+  const cell = Math.max(...G.clusters.map(c => c.bills.length)) * 10 + 170;
   const cols = Math.ceil(Math.sqrt(G.clusters.length));
-  const pos = [];   // {l, x, y, r, col}
-  const hubs = [];
-  // детерминированный «шум», чтобы сетка не выглядела механической
   const jitter = (str, amp) => {
     let h = 2166136261;
     for (const ch of str) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619); }
     return ((h >>> 0) % 1000 / 1000 - 0.5) * 2 * amp;
   };
+  const hubs = [];
+  const nodes = [];  // {l, hx, hy (индекс хаба), ang, rad, phase, col}
   G.clusters.forEach((c, i) => {
     const gx = (i % cols) * cell + cell / 2;
     const gy = Math.floor(i / cols) * cell + cell / 2;
     const hx = gx + jitter(c.base, cell * 0.12);
     const hy = gy + jitter(c.base + "~", cell * 0.12);
-    const R = 26 + Math.sqrt(c.bills.length) * 26;
-    hubs.push({label: c.base, x: hx, y: hy, R, count: c.count});
+    const R = 34 + Math.sqrt(c.bills.length) * 34;
+    hubs.push({label: c.base, hx, hy, R, count: c.count,
+               spin: (i % 2 ? 1 : -1) * (0.018 + 0.008 * (i % 3))});  // созвездия вращаются в разные стороны
     c.bills.forEach((l, k) => {
-      const a = k * 2.399963 + 0.7;                     // золотой угол — спираль подсолнуха
-      const rr = R * Math.sqrt((k + 0.6) / c.bills.length);
-      pos.push({l, x: hx + Math.cos(a) * rr + jitter(l.n, 6),
-                   y: hy + Math.sin(a) * rr + jitter(l.n + "~", 6),
-                   col: l.a === "anti" ? "#e05555" : l.a === "pro" ? "#43b581" : "#5a6675"});
+      nodes.push({l, hi: i, ang: k * 2.399963 + 0.7, rad: R * Math.sqrt((k + 0.6) / c.bills.length),
+                  phase: (k * 1.7 + i) % 6.28,
+                  col: l.a === "anti" ? "#e05555" : l.a === "pro" ? "#43b581" : "#5a6675"});
     });
   });
-  // сдвигаем всё к центру канваса
   const rows = Math.ceil(G.clusters.length / cols);
   const offX = (W - (cols - 0.2) * cell) / 2, offY = (H - (rows - 0.1) * cell) / 2;
-  for (const p of pos) { p.x += offX; p.y += offY; }
-  for (const h of hubs) { h.x += offX; h.y += offY; }
+  for (const h of hubs) { h.x = h.hx + offX; h.y = h.hy + offY; }
+  for (const n of nodes) { n.hx = hubs[n.hi].hx + offX; n.hy = hubs[n.hi].hy + offY; }
 
-  // --- вьюпорт: стартуем с подгонки под содержимое, зум колесом, панорама мышью ---
-  const minX = Math.min(...hubs.map(h => h.x)) - 120, maxX = Math.max(...hubs.map(h => h.x)) + 120;
-  const minY = Math.min(...hubs.map(h => h.y)) - 60, maxY = Math.max(...hubs.map(h => h.y)) + 90;
-  const fitZ = Math.max(0.3, Math.min(1.6, Math.min(W / (maxX - minX), H / (maxY - minY))));
-  const vp = {z: fitZ,
-    x: (W - (maxX + minX) * fitZ) / 2,
-    y: (H - (maxY + minY) * fitZ) / 2};
+  // --- вьюпорт: авто-fit, зум колесом, панорама ---
+  const minX = Math.min(...hubs.map(h => h.hx)) - 150 + offX, maxX = Math.max(...hubs.map(h => h.hx)) + 150 + offX;
+  const minY = Math.min(...hubs.map(h => h.hy)) - 80 + offY, maxY = Math.max(...hubs.map(h => h.hy)) + 110 + offY;
+  const fitZ = Math.max(0.3, Math.min(2.2, Math.min(W / (maxX - minX), H / (maxY - minY))));
+  const vp = {z: fitZ, x: (W - (maxX + minX) * fitZ) / 2, y: (H - (maxY + minY) * fitZ) / 2};
   const toWorld = (px, py) => [(px - vp.x) / vp.z, (py - vp.y) / vp.z];
   let drag = null, moved = false, hover = null;
 
-  function draw() {
+  function nodePos(n, t) {
+    // медленное орбитальное вращение + псевдо-глубина (z качается — точка «дышит» к камере)
+    const a = n.ang + t * hubs[n.hi].spin;
+    const z = Math.sin(t * 0.35 + n.phase);            // -1..1 глубина
+    return {
+      x: n.hx + Math.cos(a) * n.rad,
+      y: n.hy + Math.sin(a) * n.rad * 0.92 + z * 3,
+      z, scale: 1 + 0.28 * z, glow: 0.68 + 0.32 * (z + 1) / 2,
+    };
+  }
+
+  function draw(t) {
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, W, H);
     ctx.setTransform(vp.z, 0, 0, vp.z, vp.x, vp.y);
-    // лучи: законопроект -> его базовый закон
+    // лучи к базам; под курсором — ярче только у выбранной точки
     ctx.lineWidth = 1 / vp.z;
-    let pi = 0;
-    for (const c of G.clusters) {
-      const h = hubs[G.clusters.indexOf(c)];
-      for (let k = 0; k < c.bills.length; k++) {
-        const p = pos[pi++];
-        ctx.strokeStyle = p.col === "#5a6675" ? "rgba(120,135,155,0.18)"
-          : p.col === "#e05555" ? "rgba(224,85,85,0.22)" : "rgba(67,181,129,0.25)";
-        ctx.beginPath(); ctx.moveTo(h.x, h.y); ctx.lineTo(p.x, p.y); ctx.stroke();
+    const hiHover = hover ? hover.hi : -1;
+    nodes.forEach((n, i) => {
+      const p = nodePos(n, t);
+      const hot = i === nodes.indexOf(hover);
+      ctx.strokeStyle = hot ? "rgba(232,163,61,0.9)"
+        : n.col === "#5a6675" ? "rgba(120,135,155,0.20)"
+        : n.col === "#e05555" ? "rgba(224,85,85,0.26)" : "rgba(67,181,129,0.30)";
+      ctx.beginPath(); ctx.moveTo(hubs[n.hi].x, hubs[n.hi].y); ctx.lineTo(p.x, p.y); ctx.stroke();
+    });
+    // узлы: размер и яркость от «глубины» — живой 3D-мерцательный слой
+    nodes.forEach((n, i) => {
+      const p = nodePos(n, t);
+      const hot = i === nodes.indexOf(hover);
+      const r = (5 + p.scale * 1.6) * (hot ? 1.7 : 1);
+      ctx.globalAlpha = hot ? 1 : p.glow;
+      if (hot) {
+        ctx.strokeStyle = "#e8a33d"; ctx.lineWidth = 2 / vp.z;
+        ctx.beginPath(); ctx.arc(p.x, p.y, r + 4 / vp.z, 0, 7); ctx.stroke();
       }
-    }
-    // подписи созвездий
-    ctx.font = "bold 12px Inter, system-ui";
+      ctx.fillStyle = n.col;
+      ctx.beginPath(); ctx.arc(p.x, p.y, r, 0, 7); ctx.fill();
+      ctx.globalAlpha = 1;
+    });
+    // подписи созвездий с лёгким «дыханием»
     ctx.textAlign = "center";
-    for (const h of hubs) {
+    hubs.forEach((h, i) => {
+      const bob = Math.sin(t * 0.6 + i * 1.3) * 2;
       const label = h.label.length > 38 ? h.label.slice(0, 37) + "…" : h.label;
+      ctx.font = "bold 13px Inter, system-ui";
       const w = ctx.measureText(label).width;
       ctx.fillStyle = "rgba(11,14,19,0.8)";
-      ctx.fillRect(h.x - w / 2 - 6, h.y - 10, w + 12, 19);
+      ctx.fillRect(h.x - w / 2 - 6, h.y - 11 + bob, w + 12, 20);
       ctx.fillStyle = "#c9973a";
-      ctx.fillText(label, h.x, h.y + 4);
-    }
+      ctx.fillText(label, h.x, h.y + 4 + bob);
+    });
     ctx.textAlign = "left";
-    // узлы
-    for (const p of pos) {
-      ctx.fillStyle = p.col;
-      ctx.globalAlpha = hover && p !== hover ? 0.45 : 1;
-      ctx.beginPath(); ctx.arc(p.x, p.y, p === hover ? 7 : 4.5, 0, 7); ctx.fill();
-      ctx.globalAlpha = 1;
-    }
-    // подсказка (экранные координаты)
+    // подсказка (экранные координаты, без затемнения сцены)
     if (hover) {
       ctx.setTransform(1, 0, 0, 1, 0, 0);
       const tw = Math.min(W - 20, 440);
       const lines = wrap(ctx, audMark(hover.l) + " " + hover.l.t, tw - 16);
       const hgt = 12 + lines.length * 15;
       const bx = Math.min(hover.sx + 14, W - tw - 6), by = Math.max(4, hover.sy - 14);
-      ctx.fillStyle = "rgba(14,17,22,0.96)";
-      ctx.strokeStyle = "rgba(140,155,175,0.45)";
+      ctx.fillStyle = "rgba(14,17,22,0.97)";
+      ctx.strokeStyle = "rgba(232,163,61,0.6)";
       ctx.beginPath(); ctx.roundRect(bx, by, tw, hgt, 6); ctx.fill(); ctx.stroke();
       ctx.fillStyle = "#e8edf4";
       lines.forEach((ln, i) => ctx.fillText(ln, bx + 8, by + 16 + i * 15));
@@ -270,16 +283,27 @@ function drawClusterGraph(canvas, G) {
     const px = (e.clientX - rect.left) * (W / rect.width);
     const py = (e.clientY - rect.top) * (H / rect.height);
     const [x, y] = toWorld(px, py);
-    let best = null, bd = 120 / vp.z;
-    for (const p of pos) {
+    const t = performance.now() / 1000;
+    let best = null, bd = 160 / vp.z;
+    nodes.forEach((n, i) => {
+      const p = nodePos(n, t);
       const d = (p.x - x) ** 2 + (p.y - y) ** 2;
-      if (d < bd) { bd = d; best = p; }
-    }
-    if (best) { best.sx = px; best.sy = py; }
-    return {n: best, px, py};
+      if (d < bd) { bd = d; best = {n: i, p}; }
+    });
+    if (best) { hover = nodes[best.n]; hover.sx = px; hover.sy = py; }
+    else hover = null;
+    return {px, py};
   }
 
-  draw();
+  let graphRAF = null;
+  function loop() {
+    draw(performance.now() / 1000);
+    graphRAF = requestAnimationFrame(loop);
+  }
+  loop();
+  // отладочный крюк: принудительная подсветка узла (используется тестами)
+  canvas.__setHover = i => { hover = nodes[i % nodes.length]; hover.sx = W / 2; hover.sy = H / 3; };
+
   canvas.addEventListener("wheel", e => {
     e.preventDefault();
     const rect = canvas.getBoundingClientRect();
@@ -291,31 +315,28 @@ function drawClusterGraph(canvas, G) {
     vp.x = px - (px - vp.x) * f;
     vp.y = py - (py - vp.y) * f;
     vp.z = nz;
-    draw();
   }, {passive: false});
   canvas.addEventListener("mousedown", e => {
-    const p = pick(e); drag = {px: p.px, py: p.py}; moved = false;
+    pick(e); drag = {px: e.clientX, py: e.clientY}; moved = false;
     canvas.style.cursor = "grabbing";
   });
   window.addEventListener("mouseup", () => { drag = null; canvas.style.cursor = "grab"; });
   canvas.addEventListener("mousemove", e => {
-    const p = pick(e);
     if (drag) {
-      const dx = p.px - drag.px, dy = p.py - drag.py;
+      const rect = canvas.getBoundingClientRect();
+      const dx = (e.clientX - drag.px) * (W / rect.width);
+      const dy = (e.clientY - drag.py) * (H / rect.height);
       if (Math.abs(dx) + Math.abs(dy) > 3) moved = true;
       vp.x += dx; vp.y += dy;
-      drag = {px: p.px, py: p.py};
-      draw();
+      drag = {px: e.clientX, py: e.clientY};
       return;
     }
-    hover = p.n;
-    canvas.style.cursor = p.n ? "pointer" : "grab";
-    draw();
+    pick(e);
+    canvas.style.cursor = hover ? "pointer" : "grab";
   });
   canvas.addEventListener("click", e => {
-    if (moved) return;
-    const p = pick(e);
-    if (p.n) window.open(billUrl(p.n.l), "_blank", "noopener");
+    if (moved || !hover) return;
+    window.open(billUrl(hover.l), "_blank", "noopener");
   });
 }
 
