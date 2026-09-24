@@ -39,9 +39,13 @@ def http_get(url, referer=None, xhr=True, retries=3):
             if resp.headers.get("Content-Encoding") == "gzip":
                 data = gzip.GzipFile(fileobj=io.BytesIO(data)).read()
             return data.decode("utf-8", errors="replace")
+        except urllib.error.HTTPError as e:
+            if attempt == retries - 1:
+                raise RuntimeError(f"HTTP {e.code} на {url} (СОЗД может блокировать IP датацентра)") from None
+            time.sleep(3 * (attempt + 1))
         except Exception as e:
             if attempt == retries - 1:
-                raise
+                raise RuntimeError(f"{type(e).__name__}: {e} на {url}") from None
             time.sleep(3 * (attempt + 1))
 
 
@@ -140,9 +144,20 @@ def main():
     args = ap.parse_args()
     convs = [int(c) for c in args.convocations.split(",") if c.strip()]
     all_bills = []
+    errors = []
     for conv in convs:
         print(f"== Созыв {conv}", flush=True)
-        all_bills.extend(crawl_convocation(conv))
+        try:
+            all_bills.extend(crawl_convocation(conv))
+        except Exception as e:
+            errors.append((conv, str(e)))
+            print(f"  !! созыв {conv} не собран: {e}", flush=True)
+    if errors and not all_bills:
+        old = os.path.join(os.path.dirname(__file__), "..", "data", "laws_raw.json")
+        if os.path.exists(old):
+            print(f"!! НИЧЕГО не собрано ({len(errors)} ошибок), оставляю старые данные", flush=True)
+            return
+        raise SystemExit(f"не собрано ни одного созыва: {errors}")
     out = os.path.join(os.path.dirname(__file__), "..", args.out)
     out = os.path.abspath(out)
     os.makedirs(os.path.dirname(out), exist_ok=True)
