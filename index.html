@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Законы РФ 2002–2026: для людей и не для людей</title>
+<meta name="description" content="Все законопроекты и законы РФ с 2002 года: кто что отдаёт государству и что получает в ответ. Автоматическое обновление из данных Госдумы.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Unbounded:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>
+  <div class="wrap head">
+    <div>
+      <h1>Законы РФ <span class="muted">2002–2026</span></h1>
+      <p class="sub">Что человек отдаёт государству — и что получает в ответ. Данные Госдумы (СОЗД), обновление автоматическое.</p>
+    </div>
+    <div class="updated" id="updated"></div>
+  </div>
+</header>
+
+<section class="tiles wrap" id="tiles"></section>
+
+<section class="fresh wrap">
+  <h2 class="h-sm">Свежие законопроекты</h2>
+  <div class="strip" id="fresh"></div>
+</section>
+
+<nav class="wrap controls">
+  <div class="tabs" id="audTabs">
+    <button data-a="anti" class="on">🔴 Не для людей</button>
+    <button data-a="pro">🟢 Для людей</button>
+    <button data-a="all">⚪ Все</button>
+  </div>
+  <div class="views" id="viewTabs">
+    <button data-v="stage" class="on">По стадиям</button>
+    <button data-v="year">По годам</button>
+    <button data-v="topic">По темам</button>
+    <button data-v="graph" title="Законы, правящие один и тот же закон, связаны">🕸 Сетка законов</button>
+  </div>
+  <input type="search" id="q" placeholder="Поиск по названию, номеру, инициатору…">
+</nav>
+
+<main class="wrap" id="board"></main>
+
+<footer class="wrap">
+  <p>Классификация — открытый словарь правил (<code>parser/rules.json</code>), не нейросеть. «Вырезка» на карточке — сработавшие признаки; спорные законы правятся в <code>parser/overrides.json</code>. В сетке законов связаны законопроекты, правящие один и тот же закон (как заметки в Zettelkasten). Источник: <a href="https://sozd.duma.gov.ru" target="_blank" rel="noopener">СОЗД Госдумы</a>.</p>
+</footer>
+
+<script src="app.js"></script>
+</body>
+</html>
