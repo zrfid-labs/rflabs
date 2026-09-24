@@ -95,11 +95,11 @@ def score(text, rules):
         m = rx.search(text)
         if m:
             total += w
-            s = max(0, m.start() - 45)
-            snip = re.sub(r"\s+", " ", text[s:m.end() + 55]).strip()
+            s = max(0, m.start() - 90)
+            snip = re.sub(r"\s+", " ", text[s:m.end() + 120]).strip()
             if s > 0:
                 snip = "…" + snip
-            if m.end() + 55 < len(text):
+            if m.end() + 120 < len(text):
                 snip += "…"
             scored.append((w, snip))
     scored.sort(key=lambda x: -x[0])

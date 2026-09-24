@@ -173,99 +173,120 @@ function drawClusterGraph(canvas, G) {
   const ctx = canvas.getContext("2d");
   const W = canvas.width, H = canvas.height;
 
-  // --- раскладка: созвездия на сетке ---
-  const cell = Math.max(...G.clusters.map(c => c.bills.length)) * 10 + 170;
-  const cols = Math.ceil(Math.sqrt(G.clusters.length));
-  const jitter = (str, amp) => {
+  // ===== настоящее 3D: сцена-галактика с перспективой =====
+  const hubs = [], nodes = [];
+  const NH = G.clusters.length;
+  const jitter3 = (str, amp) => {
     let h = 2166136261;
     for (const ch of str) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619); }
     return ((h >>> 0) % 1000 / 1000 - 0.5) * 2 * amp;
   };
-  const hubs = [];
-  const nodes = [];  // {l, hx, hy (индекс хаба), ang, rad, phase, col}
   G.clusters.forEach((c, i) => {
-    const gx = (i % cols) * cell + cell / 2;
-    const gy = Math.floor(i / cols) * cell + cell / 2;
-    const hx = gx + jitter(c.base, cell * 0.12);
-    const hy = gy + jitter(c.base + "~", cell * 0.12);
-    const R = 34 + Math.sqrt(c.bills.length) * 34;
-    hubs.push({label: c.base, hx, hy, R, count: c.count,
-               spin: (i % 2 ? 1 : -1) * (0.018 + 0.008 * (i % 3))});  // созвездия вращаются в разные стороны
+    const rr = 420 * Math.sqrt((i + 0.5) / NH);
+    const th = i * 2.399963;
+    const hx = rr * Math.cos(th), hz = rr * Math.sin(th), hy = jitter3(c.base, 90);
+    hubs.push({label: c.base, x: hx, y: hy, z: hz, count: c.count,
+               spin: (i % 2 ? 1 : -1) * (0.05 + 0.02 * (i % 3))});
+    const R = 60 + Math.sqrt(c.bills.length) * 42;
     c.bills.forEach((l, k) => {
-      nodes.push({l, hi: i, ang: k * 2.399963 + 0.7, rad: R * Math.sqrt((k + 0.6) / c.bills.length),
-                  phase: (k * 1.7 + i) % 6.28,
-                  col: l.a === "anti" ? "#e05555" : l.a === "pro" ? "#43b581" : "#5a6675"});
+      const y = 1 - (k + 0.5) / c.bills.length * 2;
+      const r = Math.sqrt(1 - y * y);
+      const a = k * 2.399963;
+      nodes.push({l, hi: i,
+        x: R * r * Math.cos(a), y: R * y, z: R * r * Math.sin(a),
+        col: l.a === "anti" ? "#e05555" : l.a === "pro" ? "#43b581" : "#5a6675"});
     });
   });
-  const rows = Math.ceil(G.clusters.length / cols);
-  const offX = (W - (cols - 0.2) * cell) / 2, offY = (H - (rows - 0.1) * cell) / 2;
-  for (const h of hubs) { h.x = h.hx + offX; h.y = h.hy + offY; }
-  for (const n of nodes) { n.hx = hubs[n.hi].hx + offX; n.hy = hubs[n.hi].hy + offY; }
 
-  // --- вьюпорт: авто-fit, зум колесом, панорама ---
-  const minX = Math.min(...hubs.map(h => h.hx)) - 150 + offX, maxX = Math.max(...hubs.map(h => h.hx)) + 150 + offX;
-  const minY = Math.min(...hubs.map(h => h.hy)) - 80 + offY, maxY = Math.max(...hubs.map(h => h.hy)) + 110 + offY;
-  const fitZ = Math.max(0.3, Math.min(2.2, Math.min(W / (maxX - minX), H / (maxY - minY))));
-  const vp = {z: fitZ, x: (W - (maxX + minX) * fitZ) / 2, y: (H - (maxY + minY) * fitZ) / 2};
-  const toWorld = (px, py) => [(px - vp.x) / vp.z, (py - vp.y) / vp.z];
-  let drag = null, moved = false, hover = null;
+  // камера: авто-вращение, докрутка мышью, зум колесом
+  let yaw = 0.6, pitch = 0.42, zoom = 1.15, auto = true;
+  const FOV = 1400, CX = W / 2, CY = H / 2;
 
-  function nodePos(n, t) {
-    // медленное орбитальное вращение + псевдо-глубина (z качается — точка «дышит» к камере)
-    const a = n.ang + t * hubs[n.hi].spin;
-    const z = Math.sin(t * 0.35 + n.phase);            // -1..1 глубина
-    return {
-      x: n.hx + Math.cos(a) * n.rad,
-      y: n.hy + Math.sin(a) * n.rad * 0.92 + z * 3,
-      z, scale: 1 + 0.28 * z, glow: 0.68 + 0.32 * (z + 1) / 2,
-    };
+  function project(x, y, z) {
+    const cy = Math.cos(yaw), sy = Math.sin(yaw);
+    let X = x * cy - z * sy, Z = x * sy + z * cy;
+    const cp = Math.cos(pitch), sp = Math.sin(pitch);
+    let Y2 = y * cp - Z * sp, Z2 = y * sp + Z * cp;
+    const s = FOV / (FOV + Z2);
+    return {sx: CX + X * s * zoom * 1.35, sy: CY + Y2 * s * zoom * 1.35, s, depth: Z2};
   }
+
+  let drag = null, moved = false, hover = null;
+  let screenPos = [];   // экранные позиции узлов текущего кадра
 
   function draw(t) {
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, W, H);
-    ctx.setTransform(vp.z, 0, 0, vp.z, vp.x, vp.y);
-    // лучи к базам; под курсором — ярче только у выбранной точки
-    ctx.lineWidth = 1 / vp.z;
-    const hiHover = hover ? hover.hi : -1;
-    nodes.forEach((n, i) => {
-      const p = nodePos(n, t);
-      const hot = i === nodes.indexOf(hover);
-      ctx.strokeStyle = hot ? "rgba(232,163,61,0.9)"
-        : n.col === "#5a6675" ? "rgba(120,135,155,0.20)"
-        : n.col === "#e05555" ? "rgba(224,85,85,0.26)" : "rgba(67,181,129,0.30)";
-      ctx.beginPath(); ctx.moveTo(hubs[n.hi].x, hubs[n.hi].y); ctx.lineTo(p.x, p.y); ctx.stroke();
+    const hubsP = hubs.map((h, i) => {
+      const bob = Math.sin(t * 0.6 + i * 1.3) * 4;
+      const p = project(h.x, h.y + bob, h.z);
+      return {...h, p, i};
     });
-    // узлы: размер и яркость от «глубины» — живой 3D-мерцательный слой
-    nodes.forEach((n, i) => {
-      const p = nodePos(n, t);
-      const hot = i === nodes.indexOf(hover);
-      const r = (5 + p.scale * 1.6) * (hot ? 1.7 : 1);
-      ctx.globalAlpha = hot ? 1 : p.glow;
-      if (hot) {
-        ctx.strokeStyle = "#e8a33d"; ctx.lineWidth = 2 / vp.z;
-        ctx.beginPath(); ctx.arc(p.x, p.y, r + 4 / vp.z, 0, 7); ctx.stroke();
+    const nodesP = nodes.map((n, i) => {
+      const h = hubs[n.hi];
+      const a = t * h.spin;
+      const ca = Math.cos(a), sa = Math.sin(a);
+      const x = n.x * ca - n.z * sa, z = n.x * sa + n.z * ca;
+      const p = project(h.x + x, h.y + n.y, h.z + z);
+      return {...n, p, i};
+    });
+    screenPos = nodesP.map(n => [n.p.sx, n.p.sy]);
+    const all = [
+      ...hubsP.map(h => ({kind: "hub", ...h})),
+      ...nodesP.map(n => ({kind: "node", ...n})),
+    ].sort((a, b) => b.p.depth - a.p.depth);
+
+    ctx.lineWidth = 1;
+    nodesP.forEach(n => {
+      const h = hubs[n.hi];
+      const a1 = project(h.x, h.y, h.z);
+      ctx.strokeStyle = nodes[n.i] === hover
+        ? "rgba(232,163,61,0.95)"
+        : n.col === "#5a6675" ? "rgba(120,135,155,0.16)"
+        : n.col === "#e05555" ? "rgba(224,85,85,0.22)" : "rgba(67,181,129,0.26)";
+      ctx.beginPath();
+      ctx.moveTo(a1.sx, a1.sy);
+      ctx.lineTo(n.p.sx, n.p.sy);
+      ctx.stroke();
+    });
+
+    for (const o of all) {
+      const near = Math.max(0, Math.min(1, 1 - o.p.depth / 900));
+      if (o.kind === "hub") {
+        const size = 9 * o.p.s * zoom;
+        ctx.globalAlpha = 0.25 + 0.55 * near;
+        ctx.fillStyle = "#c9973a";
+        ctx.beginPath(); ctx.arc(o.p.sx, o.p.sy, Math.max(2, size * 0.35), 0, 7); ctx.fill();
+        if (o.p.depth < 250) {
+          const label = o.label.length > 40 ? o.label.slice(0, 39) + "…" : o.label;
+          ctx.font = "bold " + Math.max(9, 13 * o.p.s * zoom * 0.9) + "px Inter, system-ui";
+          ctx.textAlign = "center";
+          const w = ctx.measureText(label).width;
+          ctx.fillStyle = "rgba(11,14,19,0.75)";
+          ctx.fillRect(o.p.sx - w / 2 - 5, o.p.sy - size * 0.35 - 21, w + 10, 17);
+          ctx.fillStyle = "#c9973a";
+          ctx.globalAlpha = 0.45 + 0.55 * near;
+          ctx.fillText(label, o.p.sx, o.p.sy - size * 0.35 - 8);
+          ctx.textAlign = "left";
+        }
+      } else {
+        const hot = nodes[o.i] === hover;
+        const r = (3.4 + 2.2 * near) * o.p.s * zoom * (hot ? 1.8 : 1);
+        ctx.globalAlpha = hot ? 1 : 0.35 + 0.65 * near;
+        if (hot) {
+          ctx.strokeStyle = "#e8a33d"; ctx.lineWidth = 2;
+          ctx.beginPath(); ctx.arc(o.p.sx, o.p.sy, r + 4, 0, 7); ctx.stroke();
+          ctx.lineWidth = 1;
+        }
+        ctx.fillStyle = o.col;
+        ctx.beginPath(); ctx.arc(o.p.sx, o.p.sy, r, 0, 7); ctx.fill();
       }
-      ctx.fillStyle = n.col;
-      ctx.beginPath(); ctx.arc(p.x, p.y, r, 0, 7); ctx.fill();
       ctx.globalAlpha = 1;
-    });
-    // подписи созвездий с лёгким «дыханием»
-    ctx.textAlign = "center";
-    hubs.forEach((h, i) => {
-      const bob = Math.sin(t * 0.6 + i * 1.3) * 2;
-      const label = h.label.length > 38 ? h.label.slice(0, 37) + "…" : h.label;
-      ctx.font = "bold 13px Inter, system-ui";
-      const w = ctx.measureText(label).width;
-      ctx.fillStyle = "rgba(11,14,19,0.8)";
-      ctx.fillRect(h.x - w / 2 - 6, h.y - 11 + bob, w + 12, 20);
-      ctx.fillStyle = "#c9973a";
-      ctx.fillText(label, h.x, h.y + 4 + bob);
-    });
-    ctx.textAlign = "left";
-    // подсказка (экранные координаты, без затемнения сцены)
+    }
+
     if (hover) {
-      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      const hp = nodesP[nodes.indexOf(hover)];
+      if (hp) { hover.sx = hp.p.sx; hover.sy = hp.p.sy; }
       const tw = Math.min(W - 20, 440);
       const lines = wrap(ctx, audMark(hover.l) + " " + hover.l.t, tw - 16);
       const hgt = 12 + lines.length * 15;
@@ -282,53 +303,37 @@ function drawClusterGraph(canvas, G) {
     const rect = canvas.getBoundingClientRect();
     const px = (e.clientX - rect.left) * (W / rect.width);
     const py = (e.clientY - rect.top) * (H / rect.height);
-    const [x, y] = toWorld(px, py);
-    const t = performance.now() / 1000;
-    let best = null, bd = 160 / vp.z;
-    nodes.forEach((n, i) => {
-      const p = nodePos(n, t);
-      const d = (p.x - x) ** 2 + (p.y - y) ** 2;
-      if (d < bd) { bd = d; best = {n: i, p}; }
+    let best = null, bd = 200;
+    screenPos.forEach(([sx, sy], i) => {
+      const d = (sx - px) ** 2 + (sy - py) ** 2;
+      if (d < bd) { bd = d; best = i; }
     });
-    if (best) { hover = nodes[best.n]; hover.sx = px; hover.sy = py; }
-    else hover = null;
+    hover = best === null ? null : nodes[best];
     return {px, py};
   }
 
-  let graphRAF = null;
   function loop() {
+    if (auto && !drag) yaw += 0.0018;
     draw(performance.now() / 1000);
-    graphRAF = requestAnimationFrame(loop);
+    requestAnimationFrame(loop);
   }
   loop();
-  // отладочный крюк: принудительная подсветка узла (используется тестами)
-  canvas.__setHover = i => { hover = nodes[i % nodes.length]; hover.sx = W / 2; hover.sy = H / 3; };
+
+  canvas.__setHover = i => { hover = nodes[i % nodes.length]; };
 
   canvas.addEventListener("wheel", e => {
     e.preventDefault();
-    const rect = canvas.getBoundingClientRect();
-    const px = (e.clientX - rect.left) * (W / rect.width);
-    const py = (e.clientY - rect.top) * (H / rect.height);
-    const k = e.deltaY < 0 ? 1.12 : 1 / 1.12;
-    const nz = Math.max(0.3, Math.min(6, vp.z * k));
-    const f = nz / vp.z;
-    vp.x = px - (px - vp.x) * f;
-    vp.y = py - (py - vp.y) * f;
-    vp.z = nz;
+    zoom = Math.max(0.4, Math.min(4, zoom * (e.deltaY < 0 ? 1.12 : 1 / 1.12)));
   }, {passive: false});
-  canvas.addEventListener("mousedown", e => {
-    pick(e); drag = {px: e.clientX, py: e.clientY}; moved = false;
-    canvas.style.cursor = "grabbing";
-  });
+  canvas.addEventListener("mousedown", e => { drag = {x: e.clientX, y: e.clientY}; moved = false; canvas.style.cursor = "grabbing"; });
   window.addEventListener("mouseup", () => { drag = null; canvas.style.cursor = "grab"; });
   canvas.addEventListener("mousemove", e => {
     if (drag) {
-      const rect = canvas.getBoundingClientRect();
-      const dx = (e.clientX - drag.px) * (W / rect.width);
-      const dy = (e.clientY - drag.py) * (H / rect.height);
-      if (Math.abs(dx) + Math.abs(dy) > 3) moved = true;
-      vp.x += dx; vp.y += dy;
-      drag = {px: e.clientX, py: e.clientY};
+      const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+      if (Math.abs(dx) + Math.abs(dy) > 3) { moved = true; auto = false; }
+      yaw += dx * 0.005;
+      pitch = Math.max(-0.7, Math.min(0.9, pitch + dy * 0.004));
+      drag = {x: e.clientX, y: e.clientY};
       return;
     }
     pick(e);
