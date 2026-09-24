@@ -137,6 +137,7 @@ function render() {
   stopGraph();
   const board = document.getElementById("board");
   if (view === "graph") return renderGraph(board);
+  if (view === "stats") return renderStats(board);
   const groups = groupLaws();
   board.innerHTML = `<div class="board">` + groups.map(([k, laws]) => {
     const id = view + "|" + k;
@@ -179,6 +180,41 @@ function cardHtml(l) {
      <a class="ext" href="${billUrl(l)}" target="_blank" rel="noopener">карточка в Госдуме →</a>
      <span class="tp">${esc(l.tp)}</span>
    </div>`;
+}
+
+/* ===== Статистика: качество принятых законов по годам/месяцам ===== */
+function renderStats(board) {
+  const acts = LAWS.filter(l => l.st === "Опубликован (действует)" && l.y && match(l));
+  const byYear = {};
+  for (const l of acts) {
+    byYear[l.y] = byYear[l.y] || {anti: 0, pro: 0};
+    byYear[l.y][l.a === "pro" ? "pro" : "anti"]++;
+  }
+  const lastYear = Math.max(...Object.keys(byYear).map(Number));
+  const byMonth = {};
+  for (const l of acts) {
+    if (l.y !== lastYear || !l.d) continue;
+    const m = +l.d.slice(3, 5);
+    byMonth[m] = byMonth[m] || {anti: 0, pro: 0};
+    byMonth[m][l.a === "pro" ? "pro" : "anti"]++;
+  }
+  const years = Object.keys(byYear).sort((a, b) => b - a);
+  const maxY = Math.max(1, ...years.map(y => byYear[y].anti + byYear[y].pro));
+  const months = ["янв","фев","мар","апр","май","июн","июл","авг","сен","окт","ноя","дек"];
+  const maxM = Math.max(1, ...Object.values(byMonth).map(v => v.anti + v.pro));
+  const bar = (label, anti, pro, max) => {
+    const tot = anti + pro, wA = anti / max * 100, wP = pro / max * 100;
+    return `<div class="srow"><span class="slab">${esc(label)}</span>
+      <span class="sbars"><span class="sbar anti" style="width:${wA}%"></span><span class="sbar pro" style="width:${wP}%"></span></span>
+      <span class="sval"><b class="ra">${anti}</b> / <b class="gr">${pro}</b></span></div>`;
+  };
+  board.innerHTML = `<div class="statwrap">
+    <h3 class="stitle">Принятые законы (действуют) по годам — 🔴 против / 🟢 за людей</h3>
+    ${years.map(y => bar(y, byYear[y].anti, byYear[y].pro, maxY)).join("")}
+    <h3 class="stitle">${lastYear} год по месяцам</h3>
+    ${months.map((mn, i) => byMonth[i+1] ? bar(mn, byMonth[i+1].anti, byMonth[i+1].pro, maxM) : "").join("")}
+    <p class="graphnote">Учитываются только законы с определённой категорией (🔴/🟢). Серые «без оценки» не считаются — бот добирает их ночью.</p>
+  </div>`;
 }
 
 /* ===== Сетка законов (Zettelkasten) =====
