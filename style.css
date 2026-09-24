@@ -90,6 +90,9 @@ code{background:var(--card);padding:1px 6px;border-radius:6px}
 .searchrow input{width:100%}
 .statwrap{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin:0 auto 12px;max-height:330px;overflow-y:auto}
 .statwrap summary{cursor:pointer;color:#c6d0dc;font-size:13px;font-weight:600}
+.clegend{display:flex;gap:14px;align-items:center;margin-bottom:6px;color:#c6d0dc;font-size:13px}
+.clegend .lg{color:var(--mut);font-size:12px}
+.clegend .hint{margin-left:auto;color:var(--mut);font-size:11px}
 .statwrap::-webkit-scrollbar{width:6px}
 .statwrap::-webkit-scrollbar-thumb{background:var(--line);border-radius:6px}
 .stitle{color:#c6d0dc;font-size:14px;margin:14px 0 8px}
