@@ -20,6 +20,7 @@ async function load() {
     ? "обновлено: " + meta.updated.replace("T", " ") : "";
   try {
     LAWS = await fetch("data/laws.json").then(r => { if (!r.ok) throw 0; return r.json(); });
+  fetch("data/objects.json").then(r => r.ok ? r.json() : null).then(o => { if (o) window.OBJECTS = o; });
   } catch (e) {
     try {
       LAWS = await fetch("https://raw.githubusercontent.com/zrfid-labs/rflabs/main/data/laws.json")
@@ -203,7 +204,22 @@ function yearChartHtml() {
   const grid = [0.25, 0.5, 0.75, 1].map(f =>
     `<line x1="${PADL}" x2="${W - PADR}" y1="${y(max * f)}" y2="${y(max * f)}" stroke="rgba(140,155,175,0.15)"/><text x="4" y="${y(max * f) + 4}" fill="#8b98a9" font-size="10">${Math.round(max * f)}</text>`).join("");
   const lastYear = years[years.length - 1];
-  return `<div class="statwrap">
+  const objPanel = window.OBJECTS ? `<div class="statwrap">
+    <div class="clegend"><b>🏛 Страна в цифрах</b><span class="hint">источники: Росстат / РПЦ · обновление: ${window.OBJECTS.updated}</span></div>
+    ${Object.entries(window.OBJECTS.series).map(([name, series]) => {
+      const ys = Object.keys(series);
+      const first = series[ys[0]], last = series[ys[ys.length - 1]];
+      const diff = last - first;
+      const mark = diff < 0 ? `<b class="ra">${diff.toLocaleString("ru")}</b>` : `<b class="gr">+${diff.toLocaleString("ru")}</b>`;
+      return `<div class="orow"><span class="oname">${esc(name)}</span>
+        <span class="oval">${first.toLocaleString("ru")} (${ys[0]}) → <b>${last.toLocaleString("ru")}</b> (${ys[ys.length-1]}) · изменение: ${mark}</span></div>
+        <div class="ochart">${ys.map(y => {
+          const h = series[y] / last * 100;
+          return `<div class="obar" title="${y}: ${series[y].toLocaleString("ru")}"><div class="ofill" style="height:${h}%"></div><span>${y.slice(2)}</span></div>`;
+        }).join("")}</div>`;
+    }).join("")}
+  </div>` : "";
+  return objPanel + `<div class="statwrap">
     <div class="clegend"><b>📊 Принятые и действующие законы по годам</b>
       <span class="lg"><i class="dot red"></i>против</span><span class="lg"><i class="dot green"></i>за людей</span>
       <span class="hint">наведи на точку — цифры года</span></div>
