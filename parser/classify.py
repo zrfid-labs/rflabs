@@ -121,6 +121,32 @@ def year_of(bill):
     return int(m.group(2)) if m else None
 
 
+# Базовый закон для сетки связей (Zettelkasten): в какой закон вносят правки
+BASE_RE = re.compile(
+    r"(?:в|о внесении изменений в|дополнени[ея] в)[^«\"]{0,60}[«\"]"
+    r"([^«»\"]{8,140})[«»\"]"
+)
+CODEX_RE = re.compile(r"\b(Налоговый|Гражданский|Уголовный|Жилищный|Земельный|"
+                      r"Трудовой|Семейный|Бюджетный|Таможенный|Лесной|Водный|"
+                      r"Воздушный|Градостроительный|Уголовно-процессуальный|"
+                      r"Кодекс об административных правонарушениях|"
+                      r"Уголовно-исполнительный|Арбитражный процессуальный) кодекс", re.I)
+
+
+def base_of(bill):
+    title = bill["title"]
+    m = BASE_RE.search(title)
+    if m:
+        name = m.group(1).strip()
+        if len(name) > 140:
+            name = name[:140]
+        return name
+    m = CODEX_RE.search(title)
+    if m:
+        return m.group(0).title()
+    return None
+
+
 def main():
     src = os.path.join(ROOT, "data", "laws_raw.json")
     with open(src, encoding="utf-8") as f:
@@ -129,6 +155,7 @@ def main():
     for b in bills:
         aud, topic, dbg = classify(b)
         st = stage_of(b)
+        hits = dbg["anti_hits"] if aud == "anti" else dbg["pro_hits"] if aud == "pro" else []
         out.append({
             "n": b["number"],
             "t": b["title"],
@@ -141,6 +168,8 @@ def main():
             "ed": b.get("stage_date", ""),
             "a": aud,
             "tp": topic,
+            "w": hits[:3],
+            "b": base_of(b),
         })
     meta = {
         "updated": __import__("datetime").datetime.now().isoformat(timespec="seconds"),

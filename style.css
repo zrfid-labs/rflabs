@@ -39,14 +39,22 @@ input[type=search]{flex:1;min-width:220px;background:var(--card);border:1px soli
 input[type=search]:focus{outline:1px solid var(--acc)}
 
 #board{margin:10px auto 40px}
-.board{display:grid;grid-auto-flow:column;grid-auto-columns:290px;gap:12px;overflow-x:auto;align-items:start;padding-bottom:12px}
+.board{display:grid;grid-template-columns:repeat(auto-fit,minmax(175px,1fr));gap:10px;align-items:start;padding-bottom:12px}
 .col{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px}
 .col h3{margin:2px 4px 10px;font-size:14px;display:flex;justify-content:space-between;align-items:center}
 .col h3 .cnt{background:var(--card);border-radius:20px;padding:1px 10px;font-size:13px;color:var(--mut)}
-.cards{display:flex;flex-direction:column;gap:8px}
+.cards{display:flex;flex-direction:column;gap:8px;max-height:62vh;overflow-y:auto;padding-right:2px}
+.cards::-webkit-scrollbar{width:6px}
+.cards::-webkit-scrollbar-thumb{background:var(--line);border-radius:6px}
 .card{background:var(--card);border:1px solid var(--line);border-left:3px solid var(--grey);border-radius:8px;padding:8px 10px;font-size:13px}
 .card.anti{border-left-color:var(--red)} .card.pro{border-left-color:var(--green)} .card.unknown{border-left-color:var(--grey)}
-.card .num{color:var(--acc);font-weight:600;margin-right:6px}
+.card .num{font-weight:600;margin-right:6px}
+.card .num a{color:var(--acc)}
+.card .crow{display:flex;justify-content:space-between;gap:6px;align-items:baseline}
+.card .mark{opacity:.8}
+.card .why{margin-top:5px;font-size:12px;color:#f0b3b3;background:rgba(224,85,85,.08);border:1px solid rgba(224,85,85,.25);border-radius:6px;padding:2px 7px}
+.card.pro .why{color:#a9e3c8;background:rgba(67,181,129,.08);border-color:rgba(67,181,129,.25)}
+.card .note{margin-top:4px;font-size:12px;color:var(--mut);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .card .dt{color:var(--mut);font-size:12px}
 .card .tp{display:inline-block;font-size:11px;color:var(--mut);border:1px solid var(--line);border-radius:12px;padding:0 8px;margin-top:6px}
 .card .more{display:none;margin-top:6px;color:var(--mut);font-size:12px}
@@ -60,3 +68,13 @@ input[type=search]:focus{outline:1px solid var(--acc)}
 footer{border-top:1px solid var(--line);padding:18px 0 30px;color:var(--mut);font-size:13px}
 code{background:var(--card);padding:1px 6px;border-radius:6px}
 .loading{color:var(--mut);padding:40px 0;text-align:center}
+
+/* ===== сетка законов ===== */
+.graphwrap{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px}
+.graphlegend{display:flex;gap:16px;flex-wrap:wrap;align-items:center;color:var(--mut);font-size:13px;margin-bottom:8px}
+.graphlegend .dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:5px}
+.dot.red{background:var(--red)} .dot.green{background:var(--green)} .dot.grey{background:var(--grey)}
+.graphlegend .hint{margin-left:auto;font-size:12px}
+#gcanvas{width:100%;height:auto;border:1px solid var(--line);border-radius:8px;background:#0b0e13;cursor:crosshair}
+.graphnote{margin-top:8px;color:var(--mut);font-size:12px}
+@media (max-width:720px){ h1{font-size:22px} .controls{flex-direction:column} }

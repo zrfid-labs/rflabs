@@ -35,6 +35,7 @@
     <button data-v="stage" class="on">По стадиям</button>
     <button data-v="year">По годам</button>
     <button data-v="topic">По темам</button>
+    <button data-v="graph" title="Законы, правящие один и тот же закон, связаны">🕸 Сетка законов</button>
   </div>
   <input type="search" id="q" placeholder="Поиск по названию, номеру, инициатору…">
 </nav>
@@ -42,7 +43,7 @@
 <main class="wrap" id="board"></main>
 
 <footer class="wrap">
-  <p>Классификация «для людей / не для людей» — открытый словарь правил (<a href="https://github.com/">parser/rules.json</a>), не нейросеть. Поправить категорию конкретного закона можно в <code>parser/overrides.json</code>. Источник: <a href="https://sozd.duma.gov.ru" target="_blank" rel="noopener">СОЗД Госдумы</a>.</p>
+  <p>Классификация — открытый словарь правил (<code>parser/rules.json</code>), не нейросеть. «Вырезка» на карточке — сработавшие признаки; спорные законы правятся в <code>parser/overrides.json</code>. В сетке законов связаны законопроекты, правящие один и тот же закон (как заметки в Zettelkasten). Источник: <a href="https://sozd.duma.gov.ru" target="_blank" rel="noopener">СОЗД Госдумы</a>.</p>
 </footer>
 
 <script src="app.js"></script>
