@@ -1,15 +1,22 @@
 name: test-rosstat
 on:
   workflow_dispatch: {}
+permissions:
+  contents: write
 jobs:
   t:
     runs-on: ubuntu-latest
     steps:
-      - name: Проверка доступности Росстата с серверов GitHub
+      - uses: actions/checkout@v4
+      - name: Тест Росстата + запись результата
         run: |
           for u in "https://rosstat.gov.ru/folder/11149" "https://rosstat.gov.ru/storage/mediabank/"; do
             CODE=$(curl -sk -m 40 -o /tmp/rs.html -w "%{http_code}" -L "$u" -H "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0.0.0")
             SIZE=$(wc -c < /tmp/rs.html)
-            echo "$u -> HTTP $CODE, $SIZE байт"
-            grep -oiE 'href="[^"]*\.xlsx[^"]*"' /tmp/rs.html | head -3 || true
+            echo "$u -> HTTP $CODE, $SIZE байт" >> data/rosstat_test.txt
+            grep -oiE 'href="[^"]*\.xlsx[^"]*"' /tmp/rs.html | head -5 >> data/rosstat_test.txt || true
           done
+          git config user.name "daigest-bot"; git config user.email "daigest@local"
+          git add data/rosstat_test.txt
+          git commit -m "тест росстата: результат"
+          git push
