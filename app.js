@@ -203,8 +203,7 @@ function yearChartHtml() {
   const grid = [0.25, 0.5, 0.75, 1].map(f =>
     `<line x1="${PADL}" x2="${W - PADR}" y1="${y(max * f)}" y2="${y(max * f)}" stroke="rgba(140,155,175,0.15)"/><text x="4" y="${y(max * f) + 4}" fill="#8b98a9" font-size="10">${Math.round(max * f)}</text>`).join("");
   const ylabels = years.map((yr, i) =>
-    (yr % 5 === 0 || i === years.length - 1)
-      ? `<text x="${x(i)}" y="${H - 8}" fill="#8b98a9" font-size="10" text-anchor="middle">${yr}</text>` : "").join("");
+    `<text x="${x(i)}" y="${H - 8}" fill="#8b98a9" font-size="8.5" text-anchor="end" transform="rotate(-45 ${x(i)} ${H - 8})">${yr}</text>`).join("");
   const lastYear = years[years.length - 1];
   return `<div class="statwrap">
     <div class="clegend"><b>📊 Принятые и действующие законы по годам</b>
