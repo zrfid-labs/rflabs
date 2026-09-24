@@ -5,6 +5,8 @@ let LAWS = [];          // [{n,t,c,d,y,i,st,ev,ed,a,tp,w,b}]
 let aud = "anti";       // вкладка аудитории: anti | pro | all
 let view = "stage";     // вид: stage | year | topic | graph
 let query = "";
+let yearFilter = "";
+let cycleTimer = null;
 const PAGE = 12;        // карточек на колонку до «ещё»
 const shown = {};       // счётчик доп. карточек на колонку
 let graphRAF = null;    // анимация сетки
@@ -32,8 +34,30 @@ async function load() {
   renderTiles();
   renderFresh();
   render();
+  initYearControls();
 }
 
+function initYearControls() {
+  const sel = document.getElementById("yearSel");
+  const years = [...new Set(LAWS.filter(l => l.y).map(l => l.y))].sort((a, b) => b - a);
+  sel.innerHTML = `<option value="">все годы</option>` + years.map(y => `<option value="${y}">${y}</option>`).join("");
+  sel.addEventListener("change", () => { stopCycle(); yearFilter = sel.value; render(); });
+  document.getElementById("cycle").addEventListener("click", () => {
+    if (cycleTimer) { stopCycle(); return; }
+    let i = 0;
+    cycleTimer = setInterval(() => {
+      yearFilter = String(years[i % years.length]);
+      sel.value = yearFilter;
+      render();
+      i++;
+    }, 2500);
+    document.getElementById("cycle").textContent = "⏸ стоп";
+  });
+}
+function stopCycle() {
+  if (cycleTimer) { clearInterval(cycleTimer); cycleTimer = null; }
+  document.getElementById("cycle").textContent = "▶ годы";
+}
 function dkey(l) {
   const m = /^(\d{2})\.(\d{2})\.(\d{4})$/.exec(l.d || "");
   return m ? +m[3] * 10000 + +m[2] * 100 + +m[1] : 0;
@@ -52,6 +76,7 @@ function match(l) {
     const q = query.toLowerCase();
     if (!(l.t + " " + l.n + " " + l.i + " " + l.c).toLowerCase().includes(q)) return false;
   }
+  if (yearFilter && String(l.y || "") !== yearFilter) return false;
   return true;
 }
 
@@ -66,6 +91,8 @@ function renderTiles() {
     {n: anti.length, l: "всего «не для людей»", c: "red", a: "anti", v: "topic"},
     {n: pro.length, l: "всего «для людей»", c: "gold", a: "pro", v: "topic"},
   ];
+  const cov = LAWS.filter(l => l.dg).length;
+  tiles.push({n: `${cov}`, l: "разборов написано (растёт каждую ночь)", c: "gold", a: "all", v: "topic"});
   document.getElementById("tiles").innerHTML = tiles.map((t, i) =>
     `<div class="tile ${t.c}" data-a="${t.a}" data-v="${t.v}">
        <div class="n">${t.n.toLocaleString("ru")}</div><div class="l">${t.l}</div></div>`).join("");
