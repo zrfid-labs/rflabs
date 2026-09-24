@@ -33,6 +33,11 @@ jobs:
       - name: RSS-фид новых анти-законов
         run: python parser/make_feed.py
 
+      - name: Сброс кэша посетителей (версия в ссылках)
+        run: |
+          V=1790290944
+          sed -i "s/app.js?v=[0-9]*/app.js?v=$V/; s/style.css?v=[0-9]*/style.css?v=$V/" index.html
+
       - name: Проверка целостности сайта
         run: |
           test -s index.html || (echo "БЕДА: index.html пуст!" && exit 1)
