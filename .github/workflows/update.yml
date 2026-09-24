@@ -30,6 +30,14 @@ jobs:
       - name: Классифицировать (правила + LLM-метки + разборы)
         run: python parser/classify.py
 
+      - name: Проверка целостности сайта
+        run: |
+          test -s index.html || (echo "БЕДА: index.html пуст!" && exit 1)
+          test -s app.js || (echo "БЕДА: app.js пуст!" && exit 1)
+          test -s style.css || (echo "БЕДА: style.css пуст!" && exit 1)
+          python -c "import json; json.load(open('data/laws.json')); print('laws.json валиден')"
+          python parser/fetch_sozd.py --help > /dev/null && echo "парсер запускается"
+
       - name: Закоммитить изменения
         run: |
           git config user.name "laws-bot"
