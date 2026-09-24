@@ -86,7 +86,12 @@ code{background:var(--card);padding:1px 6px;border-radius:6px}
 .dg b{color:#e8a33d}
 
 /* статистика */
-.statwrap{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px}
+.searchrow{margin:0 auto 4px}
+.searchrow input{width:100%}
+.statwrap{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin:0 auto 12px;max-height:330px;overflow-y:auto}
+.statwrap summary{cursor:pointer;color:#c6d0dc;font-size:13px;font-weight:600}
+.statwrap::-webkit-scrollbar{width:6px}
+.statwrap::-webkit-scrollbar-thumb{background:var(--line);border-radius:6px}
 .stitle{color:#c6d0dc;font-size:14px;margin:14px 0 8px}
 .srow{display:grid;grid-template-columns:52px 1fr 90px;gap:8px;align-items:center;margin:4px 0}
 .slab{color:var(--mut);font-size:12px;text-align:right}

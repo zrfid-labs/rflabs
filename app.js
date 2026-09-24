@@ -139,7 +139,7 @@ function render() {
   if (view === "graph") return renderGraph(board);
 
   const groups = groupLaws();
-  const chart = view === "year" ? yearChartHtml() : "";
+  const chart = yearChartHtml();
   board.innerHTML = chart + `<div class="board">` + groups.map(([k, laws]) => {
     const id = view + "|" + k;
     const colc = view === "stage" ? (STAGE_COLORS[k] || "var(--grey)") : "var(--acc)";
@@ -191,7 +191,7 @@ function yearChartHtml() {
     byYear[l.y] = byYear[l.y] || {anti: 0, pro: 0};
     byYear[l.y][l.a]++;
   }
-  const years = Object.keys(byYear).sort((a, b) => b - a);
+  const years = Object.keys(byYear).sort((a, b) => a - b);
   if (!years.length) return "";
   const maxY = Math.max(1, ...years.map(y => byYear[y].anti + byYear[y].pro));
   const row = (label, anti, pro, max, extra) => {
@@ -211,12 +211,12 @@ function yearChartHtml() {
   const months = ["янв","фев","мар","апр","май","июн","июл","авг","сен","окт","ноя","дек"];
   const maxM = Math.max(1, ...Object.values(byM).map(v => v.anti + v.pro));
   const monthRows = months.map((mn, i) => byM[i+1] ? row(mn, byM[i+1].anti, byM[i+1].pro, maxM) : "").join("");
-  return `<div class="statwrap">
-    <h3 class="stitle">Принятые законы (действуют) по годам — 🔴 против / 🟢 за людей</h3>
+  return `<details open class="statwrap">
+    <summary>📊 Принятые законы (действуют) по годам — 🔴 против / 🟢 за людей</summary>
     ${yearsRows}
     <h3 class="stitle">${lastYear} год по месяцам</h3>
     ${monthRows}
-  </div>`;
+  </details>`;
 }
 
 /* ===== Сетка законов (Zettelkasten) =====
