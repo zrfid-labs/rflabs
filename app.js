@@ -137,9 +137,10 @@ function render() {
   stopGraph();
   const board = document.getElementById("board");
   if (view === "graph") return renderGraph(board);
-  if (view === "stats") return renderStats(board);
+
   const groups = groupLaws();
-  board.innerHTML = `<div class="board">` + groups.map(([k, laws]) => {
+  const chart = view === "year" ? yearChartHtml() : "";
+  board.innerHTML = chart + `<div class="board">` + groups.map(([k, laws]) => {
     const id = view + "|" + k;
     const colc = view === "stage" ? (STAGE_COLORS[k] || "var(--grey)") : "var(--acc)";
     const limit = PAGE + (shown[id] || 0);
@@ -182,38 +183,46 @@ function cardHtml(l) {
    </div>`;
 }
 
-/* ===== Статистика: качество принятых законов по годам/месяцам ===== */
-function renderStats(board) {
-  const acts = LAWS.filter(l => l.st === "Опубликован (действует)" && l.y && match(l) && l.a !== "unknown");
+/* ===== Диаграмма принятых законов (в виде «По годам») ===== */
+function yearChartHtml() {
+  const acts = LAWS.filter(l => l.st === "Опубликован (действует)" && l.y && l.y >= 2002 && l.a !== "unknown");
   const byYear = {};
   for (const l of acts) {
     byYear[l.y] = byYear[l.y] || {anti: 0, pro: 0};
     byYear[l.y][l.a]++;
   }
-  const lastYear = Math.max(...Object.keys(byYear).map(Number));
-  const byMonth = {};
-  for (const l of acts) {
-    if (l.y !== lastYear || !l.d) continue;
+  const years = Object.keys(byYear).sort((a, b) => a - b);
+  if (!years.length) return "";
+  const max = Math.max(...years.map(y => byYear[y].anti + byYear[y].pro));
+  const cols = years.map(y => {
+    const A = byYear[y].anti, P = byYear[y].pro, tot = A + P;
+    const hA = A / max * 100, hP = P / max * 100;
+    const showLabel = (y % 5 === 0) || y === years[years.length - 1];
+    return `<div class="ycol" title="${y}: 🔴 ${A} / 🟢 ${P}">
+      <div class="ybar"><span class="yseg pro" style="height:${hP}%"></span><span class="yseg anti" style="height:${hA}%"></span></div>
+      <span class="ylab">${showLabel ? y : ""}</span><span class="yval">${tot ? A + "/" + P : ""}</span></div>`;
+  }).join("");
+  const lastYear = years[years.length - 1];
+  const byM = {};
+  for (const l of acts) if (l.y === lastYear && l.d) {
     const m = +l.d.slice(3, 5);
-    byMonth[m] = byMonth[m] || {anti: 0, pro: 0};
-    byMonth[m][l.a]++;
+    byM[m] = byM[m] || {anti: 0, pro: 0};
+    byM[m][l.a]++;
   }
-  const years = Object.keys(byYear).sort((a, b) => b - a);
-  const maxY = Math.max(1, ...years.map(y => byYear[y].anti + byYear[y].pro));
-  const months = ["янв","фев","мар","апр","май","июн","июл","авг","сен","окт","ноя","дек"];
-  const maxM = Math.max(1, ...Object.values(byMonth).map(v => v.anti + v.pro));
-  const bar = (label, anti, pro, max) => {
-    const tot = anti + pro, wA = anti / max * 100, wP = pro / max * 100;
-    return `<div class="srow"><span class="slab">${esc(label)}</span>
-      <span class="sbars"><span class="sbar anti" style="width:${wA}%"></span><span class="sbar pro" style="width:${wP}%"></span></span>
-      <span class="sval"><b class="ra">${anti}</b> / <b class="gr">${pro}</b></span></div>`;
-  };
-  board.innerHTML = `<div class="statwrap">
-    <h3 class="stitle">Принятые законы (действуют) по годам — 🔴 против / 🟢 за людей</h3>
-    ${years.map(y => bar(y, byYear[y].anti, byYear[y].pro, maxY)).join("")}
-    <h3 class="stitle">${lastYear} год по месяцам</h3>
-    ${months.map((mn, i) => byMonth[i+1] ? bar(mn, byMonth[i+1].anti, byMonth[i+1].pro, maxM) : "").join("")}
-    <p class="graphnote">Учитываются только законы с определённой категорией (🔴/🟢). Серые «без оценки» не считаются — бот добирает их ночью.</p>
+  const mn = ["Я","Ф","М","А","М","И","И","А","С","О","Н","Д"];
+  const maxM = Math.max(1, ...Object.values(byM).map(v => v.anti + v.pro));
+  const mcols = mn.map((lab, i) => {
+    const v = byM[i + 1];
+    if (!v) return `<div class="ycol"><div class="ybar"></div><span class="ylab">${lab}</span></div>`;
+    return `<div class="ycol" title="${lab} ${lastYear}: 🔴 ${v.anti} / 🟢 ${v.pro}">
+      <div class="ybar"><span class="yseg pro" style="height:${v.pro / maxM * 100}%"></span><span class="yseg anti" style="height:${v.anti / maxM * 100}%"></span></div>
+      <span class="ylab">${lab}</span><span class="yval">${v.anti + v.pro}</span></div>`;
+  }).join("");
+  return `<div class="chartwrap">
+    <div class="ctitle">Принятые и действующие законы по годам <span class="cl">🔴 против / 🟢 за людей</span></div>
+    <div class="yrow">${cols}</div>
+    <div class="ctitle">${lastYear} по месяцам</div>
+    <div class="yrow">${mcols}</div>
   </div>`;
 }
 
