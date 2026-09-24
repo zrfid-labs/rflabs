@@ -16,7 +16,19 @@ async function load() {
   const meta = await fetch("data/meta.json").then(r => r.json()).catch(() => ({}));
   document.getElementById("updated").textContent = meta.updated
     ? "обновлено: " + meta.updated.replace("T", " ") : "";
-  LAWS = await fetch("data/laws.json").then(r => r.json());
+  try {
+    LAWS = await fetch("data/laws.json").then(r => { if (!r.ok) throw 0; return r.json(); });
+  } catch (e) {
+    try {
+      LAWS = await fetch("https://raw.githubusercontent.com/zrfid-labs/rflabs/main/data/laws.json")
+        .then(r => { if (!r.ok) throw 0; return r.json(); });
+      document.getElementById("updated").textContent += " · зеркало raw.githubusercontent";
+    } catch (e2) {
+      document.getElementById("tiles").innerHTML =
+        `<div class="tile red" style="grid-column:1/-1"><div class="l">Не удалось загрузить данные. Зеркала: <a href="https://raw.githubusercontent.com/zrfid-labs/rflabs/main/index.html">raw.githubusercontent</a> · <a href="https://cdn.jsdelivr.net/gh/zrfid-labs/rflabs@main/index.html">jsDelivr</a> · страница проекта: <a href="https://github.com/zrfid-labs/rflabs">github.com/zrfid-labs/rflabs</a>. Попробуйте VPN.</div></div>`;
+      return;
+    }
+  }
   renderTiles();
   renderFresh();
   render();
