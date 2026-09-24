@@ -20,7 +20,7 @@ async function load() {
     ? "обновлено: " + meta.updated.replace("T", " ") : "";
   try {
     LAWS = await fetch("data/laws.json").then(r => { if (!r.ok) throw 0; return r.json(); });
-  fetch("data/objects.json").then(r => r.ok ? r.json() : null).then(o => { if (o) window.OBJECTS = o; });
+  fetch("data/objects.json").then(r => r.ok ? r.json() : null).then(o => { if (o) { window.OBJECTS = o; render(); } });
   } catch (e) {
     try {
       LAWS = await fetch("https://raw.githubusercontent.com/zrfid-labs/rflabs/main/data/laws.json")
