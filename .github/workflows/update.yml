@@ -22,10 +22,10 @@ jobs:
         run: python parser/fetch_sozd.py
 
       - name: Умная разметка бесплатным LLM (без ключей)
-        run: python parser/llm_classify.py --max-requests 300 --sleep 4
+        run: python parser/llm_classify.py --max-requests 120 --sleep 4
 
       - name: Разборы законопроектов из пояснительных записок
-        run: python parser/digest.py --max-bills 60 --sleep 4
+        run: python parser/digest.py --max-bills 40 --sleep 4
 
       - name: Классифицировать (правила + LLM-метки + разборы)
         run: python parser/classify.py
