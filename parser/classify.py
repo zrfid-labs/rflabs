@@ -30,6 +30,8 @@ def load_json(p):
 
 RULES = load_json("rules.json")
 OVERRIDES = load_json("overrides.json") if os.path.exists(os.path.join(HERE, "overrides.json")) else {}
+LABELS_PATH = os.path.join(ROOT, "data", "llm_labels.json")
+LABELS = json.load(open(LABELS_PATH, encoding="utf-8")) if os.path.exists(LABELS_PATH) else {}
 
 
 def compile_rules(rules):
@@ -108,8 +110,11 @@ def classify(bill):
     text = bill["title"] + " " + bill.get("comment", "")
     anti, anti_hits = score(text, ANTI)
     pro, pro_hits = score(text, PRO)
+    lab = LABELS.get(bill["number"])
     if bill["number"] in OVERRIDES:
         aud = OVERRIDES[bill["number"]]
+    elif lab and lab.get("a") in ("anti", "pro"):
+        aud = lab["a"]
     elif anti > pro:
         aud = "anti"
     elif pro > anti:
@@ -163,7 +168,11 @@ def main():
     for b in bills:
         aud, topic, dbg = classify(b)
         st = stage_of(b)
-        hits = dbg["anti_hits"] if aud == "anti" else dbg["pro_hits"] if aud == "pro" else []
+        lab = LABELS.get(b["number"])
+        if lab and lab.get("a") == aud and lab.get("why"):
+            hits = [lab["why"]]
+        else:
+            hits = dbg["anti_hits"] if aud == "anti" else dbg["pro_hits"] if aud == "pro" else []
         out.append({
             "n": b["number"],
             "t": b["title"],
