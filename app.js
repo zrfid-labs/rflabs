@@ -31,6 +31,12 @@ async function load() {
       return;
     }
   }
+  const ys = LAWS.filter(l => l.y).map(l => l.y);
+  if (ys.length) {
+    const range = Math.min(...ys) + "–" + Math.max(...ys);
+    document.querySelector("h1 .muted").textContent = range;
+    document.title = "Законы РФ " + range + ": для людей и не для людей";
+  }
   renderTiles();
   renderFresh();
   render();
