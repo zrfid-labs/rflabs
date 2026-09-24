@@ -225,7 +225,7 @@ function yearChartHtml() {
             `<circle cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="3.5" fill="#5b8def"><title>${ys[i]}: ${series[ys[i]].toLocaleString("ru")}</title></circle>`).join("");
           const labels = ys.map((y, i) =>
             `<text x="${pts[i][0].toFixed(1)}" y="${H - 1}" fill="#8b98a9" font-size="10" text-anchor="middle">${y.slice(2)}</text>`).join("");
-          const firstLab = `<text x="${pts[0].toFixed(1)}" y="${(pts[0][1] - 7).toFixed(1)}" fill="#8b98a9" font-size="10" text-anchor="middle">${first.toLocaleString("ru")}</text>`;
+          const firstLab = `<text x="${pts[0][0].toFixed(1)}" y="${(pts[0][1] - 7).toFixed(1)}" fill="#8b98a9" font-size="10" text-anchor="middle">${first.toLocaleString("ru")}</text>`;
           const lastLab = `<text x="${pts[pts.length-1][0].toFixed(1)}" y="${(pts[pts.length-1][1] - 7).toFixed(1)}" fill="#c6d0dc" font-size="10" text-anchor="middle" font-weight="bold">${last.toLocaleString("ru")}</text>`;
           return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;max-width:520px;height:110px">
             <path d="${line}" fill="none" stroke="#5b8def" stroke-width="2"/>${dots}${labels}${firstLab}${lastLab}</svg>`;
