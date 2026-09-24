@@ -38,6 +38,12 @@ jobs:
           python -c "import json; json.load(open('data/laws.json')); print('laws.json валиден')"
           python parser/fetch_sozd.py --help > /dev/null && echo "парсер запускается"
 
+      - name: Телеграм-рассылка новых анти-законов
+        env:
+          TG_TOKEN: ${{ secrets.TG_TOKEN }}
+          TG_CHAT: ${{ secrets.TG_CHAT }}
+        run: python parser/tg_digest.py
+
       - name: Закоммитить изменения
         run: |
           git config user.name "laws-bot"
