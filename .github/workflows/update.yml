@@ -1,0 +1,36 @@
+name: update-laws
+on:
+  schedule:
+    - cron: "0 3 * * *"   # ежедневно в 06:00 МСК
+  workflow_dispatch: {}    # ручной запуск из вкладки Actions
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Собрать данные СОЗД и классифицировать
+        run: |
+          python parser/fetch_sozd.py
+          python parser/classify.py
+
+      - name: Закоммитить изменения
+        run: |
+          git config user.name "laws-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add data/laws_raw.json data/laws.json data/meta.json
+          if git diff --cached --quiet; then
+            echo "Данные не изменились"
+          else
+            git commit -m "данные: автообновление $(date -u +%F)"
+            git push
+          fi
