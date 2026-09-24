@@ -101,8 +101,15 @@ def main():
         with open(labels_path, encoding="utf-8") as f:
             labels = json.load(f)
 
-    todo = [l for l in laws if l["a"] == "unknown" and l["n"] not in labels]
-    print(f"всего: {len(laws)}, уже размечено LLM: {len(labels)}, в очереди: {len(todo)}")
+    def fresh(l):
+        m = re.match(r"(\d{2})\.(\d{2})\.(\d{4})", l.get("d", ""))
+        return int(m.group(3) + m.group(2) + m.group(1)) if m else 0
+    vis = [l for l in laws if l["a"] in ("anti", "pro") and l["n"] not in labels]
+    unk = [l for l in laws if l["a"] == "unknown" and l["n"] not in labels]
+    vis.sort(key=fresh, reverse=True)
+    todo = (vis + unk)[: args.max_requests * args.batch]
+    print(f"всего: {len(laws)}, меток: {len(labels)}, к разметке: {len(todo)} "
+          f"(сначала {len(vis)} видимых anti/pro, потом {len(unk)} неопределённых)")
     todo = todo[: args.max_requests * args.batch]
     if not todo:
         print("размечать нечего — выходим")

@@ -87,38 +87,47 @@ def stage_of(bill):
     return "На рассмотрении"
 
 
-def score(text, rules):
-    """Оценка + выжимки: кусок текста вокруг сработавшего места, не просто слово."""
+def score(text, rules, pref=None):
+    """Оценка + выжимки. Выжимку берём сначала из пояснения (pref),
+    и только если там не сработало — из заголовка."""
     scored = []
     total = 0
     for rx, w in rules:
         m = rx.search(text)
-        if m:
-            total += w
-            s = max(0, m.start() - 90)
-            snip = re.sub(r"\s+", " ", text[s:m.end() + 120]).strip()
-            if s > 0:
-                snip = "…" + snip
-            if m.end() + 120 < len(text):
-                snip += "…"
-            scored.append((w, snip))
+        if not m:
+            continue
+        total += w
+        src, base = (pref, len(pref or "")) if (pref and rx.search(pref)) else (text, 0)
+        m2 = rx.search(src)
+        s = max(0, m2.start() - 90)
+        snip = re.sub(r"\s+", " ", src[s:m2.end() + 120]).strip()
+        if s > 0:
+            snip = "…" + snip
+        if m2.end() + 120 < len(src):
+            snip += "…"
+        scored.append((w, snip))
     scored.sort(key=lambda x: -x[0])
     return total, [snip for _, snip in scored]
 
 
 def classify(bill):
     text = bill["title"] + " " + bill.get("comment", "")
-    anti, anti_hits = score(text, ANTI)
-    pro, pro_hits = score(text, PRO)
+    comment = bill.get("comment", "")
+    anti, anti_hits = score(text, ANTI, pref=comment)
+    pro, pro_hits = score(text, PRO, pref=comment)
     lab = LABELS.get(bill["number"])
+    if anti > pro:
+        kw_aud = "anti"
+    elif pro > anti:
+        kw_aud = "pro"
+    else:
+        kw_aud = "unknown"
     if bill["number"] in OVERRIDES:
         aud = OVERRIDES[bill["number"]]
-    elif lab and lab.get("a") in ("anti", "pro"):
-        aud = lab["a"]
-    elif anti > pro:
-        aud = "anti"
-    elif pro > anti:
-        aud = "pro"
+    elif lab and lab.get("a") in ("anti", "pro") and kw_aud == "unknown":
+        aud = lab["a"]     # словарь не смог — доверяем умному боту
+    elif kw_aud != "unknown":
+        aud = kw_aud       # словарь уверен; мнение бота расходится — не ломаем бакет
     else:
         aud = "unknown"
     topic = "Прочее"
