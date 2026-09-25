@@ -11,6 +11,8 @@ jobs:
   update:
     runs-on: ubuntu-latest
     timeout-minutes: 60
+    env:
+      KEY: c2a5ca0a7351716130c6ed6e5163bcd0
     steps:
       - uses: actions/checkout@v4
 
@@ -54,6 +56,12 @@ jobs:
           TG_TOKEN: ${{ secrets.TG_TOKEN }}
           TG_CHAT: ${{ secrets.TG_CHAT }}
         run: python parser/tg_digest.py
+
+      - name: IndexNow — уведомить Яндекс и Бинг
+        run: |
+          sleep 120
+          curl -s -m 30 "https://api.indexnow.org/indexnow?url=https%3A%2F%2Fzrfid-labs.github.io%2Frflabs%2F&key=c2a5ca0a7351716130c6ed6e5163bcd0" -w "IndexNow: HTTP %{http_code}
+" || true
 
       - name: Закоммитить изменения
         run: |
