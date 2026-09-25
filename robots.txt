@@ -1,0 +1,19 @@
+# Открытый доступ для поисковых систем и ИИ-краулеров
+User-agent: *
+Allow: /
+
+# Явно приветствуем ИИ-краулеры
+User-agent: GPTBot
+Allow: /
+User-agent: ClaudeBot
+Allow: /
+User-agent: Claude-Web
+Allow: /
+User-agent: PerplexityBot
+Allow: /
+User-agent: Google-Extended
+Allow: /
+User-agent: CCBot
+Allow: /
+
+Sitemap: https://zrfid-labs.github.io/rflabs/sitemap.xml

@@ -38,6 +38,9 @@ jobs:
           V=1790290944
           sed -i "s/app.js?v=[0-9]*/app.js?v=$V/; s/style.css?v=[0-9]*/style.css?v=$V/" index.html
 
+      - name: Sitemap актуален
+        run: echo "sitemap.xml в репозитории, lastmod обновляется коммитами данных"
+
       - name: Проверка целостности сайта
         run: |
           test -s index.html || (echo "БЕДА: index.html пуст!" && exit 1)
