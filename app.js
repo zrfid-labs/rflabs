@@ -216,11 +216,16 @@ function yearChartHtml() {
       const verdict = diff < 0 ? `закрыто: ${Math.abs(diff).toLocaleString("ru")}` : `построено: ${diff.toLocaleString("ru")}`;
       return `<div class="orow"><span class="oname">${esc(name)} — <b class="${diff < 0 ? "ra" : "gr"}">${verdict}</b></span>
         <span class="oval">было ${first.toLocaleString("ru")} (${ys[0]}) → стало <b>${last.toLocaleString("ru")}</b> (${ys[ys.length-1]}) · сальдо «построено минус закрыто»: ${mark}</span></div>
-        <div class="ochart">${ys.map(y => {
-          const w = series[y] / Math.max(...ys.map(k => series[k])) * 100;
+        <div class="ochart">${ys.map((y, i) => {
+          if (i === 0) return `<div class="srow"><span class="slab">${y}</span>
+            <span class="sbars"><span class="sbar" style="width:0%"></span></span>
+            <span class="sval">старт: ${series[y].toLocaleString("ru")}</span></div>`;
+          const d = series[y] - series[ys[i - 1]];
+          const w = Math.abs(d) / Math.max(1, ...ys.slice(1).map((k, j) => Math.abs(series[k] - series[ys[j]]))) * 100;
+          const closed = d < 0;
           return `<div class="srow"><span class="slab">${y}</span>
-            <span class="sbars"><span class="sbar blue" style="width:${w}%"></span></span>
-            <span class="sval">${series[y].toLocaleString("ru")}</span></div>`;
+            <span class="sbars"><span class="sbar ${closed ? "anti" : "pro"}" style="width:${w}%"></span></span>
+            <span class="sval">${closed ? "🔴 закрыто: " : "🟢 построено: "}${Math.abs(d).toLocaleString("ru")}</span></div>`;
         }).join("")}</div>`;
     }).join("")}
   </div>` : "";
