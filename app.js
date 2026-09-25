@@ -213,23 +213,12 @@ function yearChartHtml() {
       const mark = diff < 0 ? `<b class="ra">${diff.toLocaleString("ru")}</b>` : `<b class="gr">+${diff.toLocaleString("ru")}</b>`;
       return `<div class="orow"><span class="oname">${esc(name)}</span>
         <span class="oval">${first.toLocaleString("ru")} (${ys[0]}) → <b>${last.toLocaleString("ru")}</b> (${ys[ys.length-1]}) · изменение: ${mark}</span></div>
-        <div class="ochart">${(() => {
-          const W = 500, H = 110, P = 8;
-          const vals = ys.map(y => series[y]);
-          const lo = Math.min(...vals), hi = Math.max(...vals);
-          const pad = (hi - lo) * 0.15 || hi * 0.1;
-          const yv = v => H - P - (v - (lo - pad)) / ((hi + pad) - (lo - pad)) * (H - 2 * P);
-          const pts = ys.map((y, i) => [P + i * (W - 2 * P) / (ys.length - 1), yv(series[y])]);
-          const line = pts.map((p, i) => `${i ? "L" : "M"}${p[0].toFixed(1)},${p[1].toFixed(1)}`).join(" ");
-          const dots = pts.map((p, i) =>
-            `<circle cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="3.5" fill="#5b8def"><title>${ys[i]}: ${series[ys[i]].toLocaleString("ru")}</title></circle>`).join("");
-          const labels = ys.map((y, i) =>
-            `<text x="${pts[i][0].toFixed(1)}" y="${H - 1}" fill="#8b98a9" font-size="10" text-anchor="middle">${y.slice(2)}</text>`).join("");
-          const firstLab = `<text x="${pts[0][0].toFixed(1)}" y="${(pts[0][1] - 7).toFixed(1)}" fill="#8b98a9" font-size="10" text-anchor="middle">${first.toLocaleString("ru")}</text>`;
-          const lastLab = `<text x="${pts[pts.length-1][0].toFixed(1)}" y="${(pts[pts.length-1][1] - 7).toFixed(1)}" fill="#c6d0dc" font-size="10" text-anchor="middle" font-weight="bold">${last.toLocaleString("ru")}</text>`;
-          return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;max-width:520px;height:110px">
-            <path d="${line}" fill="none" stroke="#5b8def" stroke-width="2"/>${dots}${labels}${firstLab}${lastLab}</svg>`;
-        })()}</div>`;
+        <div class="ochart">${ys.map(y => {
+          const w = series[y] / Math.max(...ys.map(k => series[k])) * 100;
+          return `<div class="srow"><span class="slab">${y}</span>
+            <span class="sbars"><span class="sbar blue" style="width:${w}%"></span></span>
+            <span class="sval">${series[y].toLocaleString("ru")}</span></div>`;
+        }).join("")}</div>`;
     }).join("")}
   </div>` : "";
   return objPanel + `<div class="statwrap">
