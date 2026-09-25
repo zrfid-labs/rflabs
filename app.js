@@ -210,9 +210,11 @@ function yearChartHtml() {
       const ys = Object.keys(series);
       const first = series[ys[0]], last = series[ys[ys.length - 1]];
       const diff = last - first;
-      const mark = diff < 0 ? `<b class="ra">${diff.toLocaleString("ru")}</b>` : `<b class="gr">+${diff.toLocaleString("ru")}</b>`;
+      const mark = diff < 0
+        ? `<b class="ra">закрыто больше, чем построено: на ${Math.abs(diff).toLocaleString("ru")}</b>`
+        : `<b class="gr">построено больше, чем закрыто: на ${diff.toLocaleString("ru")}</b>`;
       return `<div class="orow"><span class="oname">${esc(name)}</span>
-        <span class="oval">${first.toLocaleString("ru")} (${ys[0]}) → <b>${last.toLocaleString("ru")}</b> (${ys[ys.length-1]}) · изменение: ${mark}</span></div>
+        <span class="oval">было ${first.toLocaleString("ru")} (${ys[0]}) → стало <b>${last.toLocaleString("ru")}</b> (${ys[ys.length-1]}) · сальдо «построено минус закрыто»: ${mark}</span></div>
         <div class="ochart">${ys.map(y => {
           const w = series[y] / Math.max(...ys.map(k => series[k])) * 100;
           return `<div class="srow"><span class="slab">${y}</span>
