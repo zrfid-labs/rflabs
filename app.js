@@ -213,7 +213,8 @@ function yearChartHtml() {
       const mark = diff < 0
         ? `<b class="ra">закрыто больше, чем построено: на ${Math.abs(diff).toLocaleString("ru")}</b>`
         : `<b class="gr">построено больше, чем закрыто: на ${diff.toLocaleString("ru")}</b>`;
-      return `<div class="orow"><span class="oname">${esc(name)}</span>
+      const verdict = diff < 0 ? `закрыто: ${Math.abs(diff).toLocaleString("ru")}` : `построено: ${diff.toLocaleString("ru")}`;
+      return `<div class="orow"><span class="oname">${esc(name)} — <b class="${diff < 0 ? "ra" : "gr"}">${verdict}</b></span>
         <span class="oval">было ${first.toLocaleString("ru")} (${ys[0]}) → стало <b>${last.toLocaleString("ru")}</b> (${ys[ys.length-1]}) · сальдо «построено минус закрыто»: ${mark}</span></div>
         <div class="ochart">${ys.map(y => {
           const w = series[y] / Math.max(...ys.map(k => series[k])) * 100;
