@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Новости законов и абсурд дня — Законы РФ</title>
+<meta name="description" content="Новости законодательства РФ из СМИ с автоматической оценкой абсурдности. Ежедневное обновление.">
+<link rel="stylesheet" href="style.css">
+<style>
+.newslist{max-width:900px;margin:0 auto;padding:20px 16px 60px}
+.ncard{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 18px;margin-bottom:12px}
+.ncard:hover{border-color:var(--acc)}
+.nhead{display:flex;justify-content:space-between;gap:10px;align-items:baseline;flex-wrap:wrap}
+.nsrc{color:var(--mut);font-size:12px}
+.nabs{font-size:12px;border-radius:12px;padding:1px 10px}
+.nabs.hi{background:rgba(224,85,85,.15);color:#f0b3b3;border:1px solid rgba(224,85,85,.4)}
+.nabs.mid{background:rgba(232,163,61,.12);color:#e8c88a;border:1px solid rgba(232,163,61,.3)}
+.nabs.lo{background:rgba(90,102,117,.15);color:var(--mut);border:1px solid var(--line)}
+.ntitle{margin:8px 0 4px;font-size:16px;font-weight:600;line-height:1.4}
+.ntitle a{color:var(--txt)}
+.ntitle a:hover{color:var(--acc)}
+.ndesc{color:var(--mut);font-size:13px;line-height:1.5}
+.ntag{display:inline-block;margin-top:8px;font-size:11px;color:var(--acc);border:1px solid rgba(232,163,61,.35);border-radius:12px;padding:1px 10px}
+</style>
+</head>
+<body>
+<header><div class="wrap head" style="max-width:900px">
+  <div><h1 style="font-size:24px">📰 Новости законов и абсурд дня</h1>
+  <p class="sub">Собирается ботами ежесуточно из СМИ. Оценка абсурдности — автоматическая. Клик — первоисточник.</p></div>
+  <div class="updated"><a href="/">← На главную</a></div>
+</div></header>
+
+<main class="newslist" id="newslist"><div class="loading">Загрузка новостей…</div></main>
+
+<script>
+"use strict";
+function esc(s){ return String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
+fetch("data/news.json").then(r => r.json()).then(news => {
+  const box = document.getElementById("newslist");
+  if (!news || !news.length) { box.innerHTML = "<p class='loading'>Новостей пока нет — бот наполняет ночью.</p>"; return; }
+  box.innerHTML = news.map(n => {
+    const a = n.absurd == null ? -1 : n.absurd;
+    const cls = a >= 6 ? "hi" : a >= 3 ? "mid" : "lo";
+    const lab = a < 0 ? "" : (a >= 6 ? "🤡 абсурд " + a + "/10" : a >= 3 ? "⚖️ " + a + "/10" : "—" + a + "/10");
+    return `<div class="ncard">
+      <div class="nhead"><span class="nsrc">${esc(n.source)} · ${esc(n.date || "")}</span>
+        ${a >= 0 ? `<span class="nabs ${cls}">${lab}</span>` : ""}</div>
+      <div class="ntitle"><a href="${esc(n.link)}" target="_blank" rel="noopener">${esc(n.title)}</a></div>
+      ${n.desc ? `<div class="ndesc">${esc(n.desc.slice(0, 220))}…</div>` : ""}
+      ${n.tag ? `<span class="ntag">${esc(n.tag)}</span>` : ""}
+    </div>`;
+  }).join("");
+}).catch(e => { document.getElementById("newslist").innerHTML = "<p>Ошибка загрузки новостей.</p>"; });
+</script>
+</body>
+</html>
