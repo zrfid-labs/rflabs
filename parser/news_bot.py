@@ -130,6 +130,8 @@ def main():
         time.sleep(1)
         with open(dst, "w", encoding="utf-8") as f:
             json.dump(out, f, ensure_ascii=False, separators=(",", ":"))
+    # выбрасываем спорт и прочий мусор, который бот сам пометил
+    out = [i for i in out if "спорт" not in (i.get("tag") or "").lower()]
     out.sort(key=lambda x: -(x["absurd"] if x["absurd"] is not None else -1))
     with open(dst, "w", encoding="utf-8") as f:
         json.dump(out, f, ensure_ascii=False, separators=(",", ":"))
