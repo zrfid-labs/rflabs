@@ -21,6 +21,15 @@ async function load() {
   try {
     LAWS = await fetch("data/laws.json").then(r => { if (!r.ok) throw 0; return r.json(); });
   fetch("data/objects.json").then(r => r.ok ? r.json() : null).then(o => { if (o) { window.OBJECTS = o; render(); } });
+  fetch("data/news.json").then(r => r.ok ? r.json() : null).then(news => {
+    if (!news || !news.length) return;
+    document.getElementById("newsSection").style.display = "";
+    const mark = n => n.absurd >= 6 ? "🤡 " : n.absurd >= 3 ? "⚖️ " : "📰 ";
+    document.getElementById("newsStrip").innerHTML = news.slice(0, 24).map(n =>
+      `<a class="chip" href="${esc(n.link)}" target="_blank" rel="noopener">
+        <div class="d">${mark}${esc(n.source)}${n.tag ? " · " + esc(n.tag) : ""}</div>
+        <div class="t">${esc(n.title)}</div></a>`).join("");
+  });
   } catch (e) {
     try {
       LAWS = await fetch("https://raw.githubusercontent.com/zrfid-labs/rflabs/main/data/laws.json")
