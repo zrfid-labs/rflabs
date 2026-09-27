@@ -110,19 +110,32 @@ def main():
     dst = os.path.join(ROOT, "data", "news.json")
     with open(dst, "w", encoding="utf-8") as f:
         json.dump(out, f, ensure_ascii=False, separators=(",", ":"))
-    # LLM размечает absurd у топ-12 (ограничение времени ночного шага)
-    for i in out[:12]:
+    # кеш оценок: накапливается между ночами, ничего не теряется
+    cache_path = os.path.join(ROOT, "data", "news_absurd_cache.json")
+    cache = {}
+    if os.path.exists(cache_path):
+        cache = json.load(open(cache_path, encoding="utf-8"))
+    for i in out:
+        if i["link"] in cache:
+            i["absurd"] = cache[i["link"]]["absurd"]
+            i["tag"] = cache[i["link"]]["tag"]
+    # LLM размечает только неразмеченные (до 12 за ночь)
+    todo = [i for i in out if i["absurd"] is None][:12]
+    for i in todo:
         r = ask_absurd(i["title"])
         if r:
             i["absurd"] = r["absurd"]
             i["tag"] = r["tag"]
+            cache[i["link"]] = {"absurd": r["absurd"], "tag": r["tag"]}
         time.sleep(1)
         with open(dst, "w", encoding="utf-8") as f:
             json.dump(out, f, ensure_ascii=False, separators=(",", ":"))
-    out.sort(key=lambda x: -(x["absurd"] or 0))
+    out.sort(key=lambda x: -(x["absurd"] if x["absurd"] is not None else -1))
     with open(dst, "w", encoding="utf-8") as f:
         json.dump(out, f, ensure_ascii=False, separators=(",", ":"))
-    print("итог новостей:", len(out), "->", dst)
+    with open(cache_path, "w", encoding="utf-8") as f:
+        json.dump(cache, f, ensure_ascii=False)
+    print("итог новостей:", len(out), "| оценок в кеше:", len(cache), "->", dst)
 
 
 if __name__ == "__main__":
