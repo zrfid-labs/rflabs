@@ -21,6 +21,11 @@ FEEDS = {
     "ТАСС": "https://tass.ru/rss/v2.xml",
 }
 
+SPORT_RE = re.compile(
+    r"футбол|хоккей|теннис|олимпиад|чемпионат|сборн[а-яё]|олимпийск|кубок мира|"
+    r"матч[а-яё]*\s|тренер|вратар|нападающ|полузащит|фигурн|лыжн|хоккеист|футболист",
+    re.I)
+
 LAW_WORDS = re.compile(
     r"закон|законопроект|госдум|дум[аеу]|штраф|налог|пошлин|сбор(?!ной)|запрет|минфин|"
     r"минцифры|госдума|депутат|принят|парламент|правительств|указ|постановлен|регулятор",
@@ -98,7 +103,9 @@ def main():
         except Exception as e:
             print(name, "ошибка:", e)
             continue
-        law_items = [i for i in items if LAW_WORDS.search(i["title"] + " " + i["desc"])]
+        law_items = [i for i in items
+                     if LAW_WORDS.search(i["title"] + " " + i["desc"])
+                     and not SPORT_RE.search(i["title"])]
         for i in law_items:
             k = i["link"]
             if k not in seen:
