@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Расследования: офшорные следы депутатов — Законы РФ</title>
+<meta name="description" content="Депутаты Госдумы в публичной базе ICIJ Offshore Leaks (Панамские, Пандора, Бахамские бумаги). Только факты из открытых источников со ссылками.">
+<link rel="stylesheet" href="style.css">
+<style>
+.investlist{max-width:900px;margin:0 auto;padding:20px 16px 60px}
+.dossier{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px 20px;margin-bottom:16px}
+.dname{font-size:18px;font-weight:700}
+.dname a{color:var(--acc)}
+.dsec{margin-top:12px}
+.dsec h3{font-size:13px;color:#c6d0dc;text-transform:uppercase;letter-spacing:.05em;margin:0 0 6px}
+.ditem{padding:6px 0;border-bottom:1px solid rgba(42,51,65,.5);font-size:13px}
+.ditem a{color:#e8c88a}
+.dmeta{color:var(--mut);font-size:11px}
+.warn{background:rgba(232,163,61,.08);border:1px solid rgba(232,163,61,.3);border-radius:8px;padding:10px 14px;color:#e8c88a;font-size:12px;margin:12px 0}
+</style>
+</head>
+<body>
+<header><div class="wrap head" style="max-width:900px">
+  <div><h1 style="font-size:24px">🔍 Офшорные следы депутатов</h1>
+  <p class="sub">Публичная база ICIJ Offshore Leaks (Панамские, Пандора, Бахамские бумаги — 800+ тыс. записей). Поиск по ФИО депутатов Госдумы.</p></div>
+  <div class="updated"><a href="/">← На главную</a></div>
+</div></header>
+
+<main class="investlist">
+  <div class="warn">⚠ <b>Важно:</b> совпадение ФИО в офшорной базе может означать однофамильца. Каждый факт — ссылка на карточку в базе ICIJ: проверяйте первоисточник. Это агрегация открытых данных, а не обвинения.</div>
+  <div id="list"><div class="loading">Загрузка…</div></div>
+</main>
+
+<script>
+"use strict";
+function esc(s){ return String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
+fetch("data/investigations.json").then(r => r.json()).then(data => {
+  const box = document.getElementById("list");
+  const names = Object.keys(data || {});
+  if (!names.length) { box.innerHTML = "<p class='loading'>Офшорных следов у депутатов в базе ICIJ пока не найдено. База депутатов растёт каждую ночь — скан повторяется автоматически.</p>"; return; }
+  box.innerHTML = names.map(name => {
+    const v = data[name];
+    return `<div class="dossier">
+      <div class="dname"><a href="${esc(v.deputy_url)}" target="_blank" rel="noopener">${esc(name)}</a></div>
+      <div class="dsec"><h3>Офицеры офшоров (совпадения ФИО)</h3>
+        ${v.officers.map(o => `<div class="ditem"><a href="${esc(o.link)}" target="_blank" rel="noopener">${esc(o.name)}</a> <span class="dmeta">— источник: ${esc(o.source)}</span></div>`).join("")}</div>
+      <div class="dsec"><h3>Связанные структуры</h3>
+        ${v.entities.map(e => `<div class="ditem"><a href="${esc(e.link)}" target="_blank" rel="noopener">${esc(e.name)}</a> <span class="dmeta">— ${esc(e.jurisdiction)} · ${esc(e.status)}</span></div>`).join("")}</div>
+    </div>`;
+  }).join("");
+}).catch(e => { document.getElementById("list").innerHTML = "<p>Ошибка загрузки.</p>"; });
+</script>
+</body>
+</html>

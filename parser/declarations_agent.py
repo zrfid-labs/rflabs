@@ -36,6 +36,8 @@ def parse_person(html, pid, url):
     """Возвращает {'name':..., 'rows':[{year,label,income,realty,transport}]}"""
     t = re.search(r"<title>\s*([^<-]+)", html)
     name = (t.group(1) if t else pid).strip()
+    fm = re.search(r"Партия:" + chr(92) + "s*([^<]+)", html)
+    faction = fm.group(1).strip()[:40] if fm else ""
     i = html.find("Доход, руб.")
     if i < 0:
         return None
@@ -58,7 +60,7 @@ def parse_person(html, pid, url):
                      "transport": (re.search(r"(\d+)\s*шт", tds[3]).group(1) if len(tds) > 3 and re.search(r"(\d+)\s*шт", tds[3]) else "0")})
     if not rows:
         return None
-    return {"name": name, "url": url, "rows": rows}
+    return {"name": name, "url": url, "faction": faction, "rows": rows}
 
 
 def main():
