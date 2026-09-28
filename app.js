@@ -21,6 +21,9 @@ async function load() {
   try {
     LAWS = await fetch("data/laws.json").then(r => { if (!r.ok) throw 0; return r.json(); });
   fetch("data/objects.json").then(r => r.ok ? r.json() : null).then(o => { if (o) { window.OBJECTS = o; render(); } });
+  fetch("data/investigations.json").then(r => r.ok ? r.json() : null).then(i => {
+    if (i && Object.keys(i).length) { window.INVEST = i; render(); }
+  });
   fetch("data/declarations.json").then(r => r.ok ? r.json() : null).then(d => {
     if (d && Object.keys(d).length) { window.DECL = d; render(); }
   });
@@ -216,6 +219,12 @@ function yearChartHtml() {
   const grid = [0.25, 0.5, 0.75, 1].map(f =>
     `<line x1="${PADL}" x2="${W - PADR}" y1="${y(max * f)}" y2="${y(max * f)}" stroke="rgba(140,155,175,0.15)"/><text x="4" y="${y(max * f) + 4}" fill="#8b98a9" font-size="10">${Math.round(max * f)}</text>`).join("");
   const lastYear = years[years.length - 1];
+  const invPanel = window.INVEST ? `<div class="statwrap">
+    <div class="clegend"><b>🔍 Офшорные следы (ICIJ Offshore Leaks)</b><span class="hint">публичная база ICIJ · совпадение ФИО, возможны однофамильцы · клик — карточка</span></div>
+    ${Object.entries(window.INVEST).map(([name, v]) => `<div class="drow">
+      <span class="dname">${esc(name)} — офицеров: ${v.officers.length}, структур: ${v.entities.length}</span>
+      <span class="dval">${v.entities.slice(0,2).map(e => `<a href="${e.link}" target="_blank" rel="noopener">${esc(e.name.slice(0,30))}</a>`).join(" · ")}</span></div>`).join("")}
+  </div>` : "";
   const declRows = window.DECL ? Object.values(window.DECL)
       .map(v => ({name: v.name, rows: v.rows.filter(r => r.income > 0)}))
       .filter(v => v.rows.length)
@@ -251,7 +260,7 @@ function yearChartHtml() {
         }).join("")}</div>`;
     }).join("")}
   </div>` : "";
-  return declPanel + objPanel + `<div class="statwrap">
+  return invPanel + declPanel + objPanel + `<div class="statwrap">
     <div class="clegend"><b>📊 Принятые и действующие законы по годам</b>
       <span class="lg"><i class="dot red"></i>против</span><span class="lg"><i class="dot green"></i>за людей</span>
       <span class="hint">наведи на точку — цифры года</span></div>

@@ -35,6 +35,12 @@ jobs:
       - name: Декларации-агент (доходы депутатов, 25/ночь)
         run: python parser/declarations_agent.py
 
+      - name: Расследования-агент (ICIJ Offshore Leaks)
+        run: |
+          curl -sk -m 300 -L -o /tmp/icij.zip https://offshoreleaks-data.icij.org/offshoreleaks/csv/full-oldb.LATEST.zip
+          mkdir -p /tmp/oldb && unzip -q -o /tmp/icij.zip -d /tmp/oldb
+          ICIJ_DIR=/tmp/oldb python parser/investigations_agent.py
+
       - name: Новости-бот (RSS СМИ + LLM абсурд-оценка)
         run: python parser/news_bot.py
 
