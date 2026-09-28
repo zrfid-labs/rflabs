@@ -21,6 +21,9 @@ async function load() {
   try {
     LAWS = await fetch("data/laws.json").then(r => { if (!r.ok) throw 0; return r.json(); });
   fetch("data/objects.json").then(r => r.ok ? r.json() : null).then(o => { if (o) { window.OBJECTS = o; render(); } });
+  fetch("data/declarations.json").then(r => r.ok ? r.json() : null).then(d => {
+    if (d && Object.keys(d).length) { window.DECL = d; render(); }
+  });
   fetch("data/news.json").then(r => r.ok ? r.json() : null).then(news => {
     if (!news || !news.length) return;
     document.getElementById("newsSection").style.display = "";
@@ -213,6 +216,16 @@ function yearChartHtml() {
   const grid = [0.25, 0.5, 0.75, 1].map(f =>
     `<line x1="${PADL}" x2="${W - PADR}" y1="${y(max * f)}" y2="${y(max * f)}" stroke="rgba(140,155,175,0.15)"/><text x="4" y="${y(max * f) + 4}" fill="#8b98a9" font-size="10">${Math.round(max * f)}</text>`).join("");
   const lastYear = years[years.length - 1];
+  const declRows = window.DECL ? Object.values(window.DECL)
+      .map(v => ({name: v.name, rows: v.rows.filter(r => r.income > 0)}))
+      .filter(v => v.rows.length)
+      .map(v => ({name: v.name, last: v.rows[0], url: v.url}))
+      .sort((a, b) => b.last.income - a.last.income).slice(0, 12) : [];
+  const declPanel = declRows.length ? `<div class="statwrap">
+    <div class="clegend"><b>💰 Доходы депутатов Госдумы</b><span class="hint">официальные декларации · declarator.org · база растёт каждую ночь</span></div>
+    ${declRows.map(d => `<div class="drow"><span class="dname"><a href="${d.url}" target="_blank" rel="noopener">${esc(d.name)}</a></span>
+      <span class="dval"><b>${d.last.income.toLocaleString("ru")} ₽</b> · ${d.last.year} · ${esc(d.last.label.slice(0,40))}</span></div>`).join("")}
+  </div>` : "";
   const objPanel = window.OBJECTS ? `<div class="statwrap">
     <div class="clegend"><b>🏛 Страна в цифрах</b><span class="hint">источники: Росстат / РПЦ · обновление: ${window.OBJECTS.updated}</span></div>
     ${Object.entries(window.OBJECTS.series).map(([name, series]) => {
@@ -238,7 +251,7 @@ function yearChartHtml() {
         }).join("")}</div>`;
     }).join("")}
   </div>` : "";
-  return objPanel + `<div class="statwrap">
+  return declPanel + objPanel + `<div class="statwrap">
     <div class="clegend"><b>📊 Принятые и действующие законы по годам</b>
       <span class="lg"><i class="dot red"></i>против</span><span class="lg"><i class="dot green"></i>за людей</span>
       <span class="hint">наведи на точку — цифры года</span></div>
