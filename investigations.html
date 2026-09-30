@@ -7,7 +7,7 @@
 <meta name="description" content="Депутаты Госдумы в публичной базе ICIJ Offshore Leaks (Панамские, Пандора, Бахамские бумаги). Только факты из открытых источников со ссылками.">
 <link rel="stylesheet" href="style.css">
 <style>
-.investlist{max-width:900px;margin:0 auto;padding:20px 16px 60px}
+.investlist{max-width:1280px;margin:0 auto;padding:8px 16px 60px}
 .dossier{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px 20px;margin-bottom:16px}
 .dname{font-size:18px;font-weight:700}
 .dname a{color:var(--acc)}
@@ -49,7 +49,8 @@ function esc(s){ return String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt
 fetch("data/investigations.json").then(r => r.json()).then(data => {
   const box = document.getElementById("list");
   const names = Object.keys(data || {});
-  if (!names.length) { box.innerHTML = "<p class='loading'>Офшорных следов у депутатов в базе ICIJ пока не найдено. База депутатов растёт каждую ночь — скан повторяется автоматически.</p>"; return; }
+  if (!names.length) { box.innerHTML = "<p class='loading'>Офшорных следов у депутатов в базе ICIJ пока не найдено. База депутатов растёт каждую ночь (+25) — скан повторяется автоматически.<br><br>
+Смотри пока блок <a href="index.html">«💰 Доходы депутатов»</a> на главной — официальные декларации уже там.</p>"; return; }
   box.innerHTML = names.map(name => {
     const v = data[name];
     return `<div class="dossier">
