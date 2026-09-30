@@ -23,14 +23,22 @@
 <header>
   <div class="wrap head">
     <div>
-      <h1>🔍 Офшорные следы депутатов</h1>
-      <p class="sub">Публичная база ICIJ Offshore Leaks (Панамские, Пандора, Бахамские бумаги). Поиск по ФИО депутатов Госдумы. Каждый факт — ссылка на первоисточник.</p>
+      <h1>Законы РФ <span class="muted" id="yearRange">2002-2026</span></h1>
+      <p class="sub">Что человек отдаёт государству — и что получает в ответ. Данные Госдумы (СОЗД), обновление автоматическое.</p>
     </div>
-    <div class="updated"><a href="index.html">← На главную</a></div>
+    <div class="updated" id="updated"></div>
   </div>
 </header>
 
+<section class="tiles wrap" id="tiles"></section>
+
+<section class="fresh wrap">
+  <h2 class="h-sm">Свежие законопроекты</h2>
+  <div class="strip" id="fresh"></div>
+</section>
+
 <main class="investlist">
+  <h2 class="h-sm" style="margin-bottom:12px">🔍 Офшорные следы депутатов</h2>
   <div class="warn">⚠ <b>Важно:</b> совпадение ФИО в офшорной базе может означать однофамильца. Каждый факт — ссылка на карточку в базе ICIJ: проверяйте первоисточник. Это агрегация открытых данных, а не обвинения.</div>
   <div id="list"><div class="loading">Загрузка…</div></div>
 </main>
@@ -54,5 +62,6 @@ fetch("data/investigations.json").then(r => r.json()).then(data => {
   }).join("");
 }).catch(e => { document.getElementById("list").innerHTML = "<p>Ошибка загрузки.</p>"; });
 </script>
+<script src="site-chrome.js"></script>
 </body>
 </html>

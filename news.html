@@ -27,12 +27,19 @@
 <header>
   <div class="wrap head">
     <div>
-      <h1>📰 Новости законов и абсурд дня</h1>
-      <p class="sub">Собирается ботами ежесуточно из СМИ (Лента, РИА, Коммерсантъ, ТАСС). Оценка абсурдности — автоматическая по открытой методике. Клик — первоисточник.</p>
+      <h1>Законы РФ <span class="muted" id="yearRange">2002-2026</span></h1>
+      <p class="sub">Что человек отдаёт государству — и что получает в ответ. Данные Госдумы (СОЗД), обновление автоматическое.</p>
     </div>
-    <div class="updated"><a href="index.html">← На главную</a></div>
+    <div class="updated" id="updated"></div>
   </div>
 </header>
+
+<section class="tiles wrap" id="tiles"></section>
+
+<section class="fresh wrap">
+  <h2 class="h-sm">Свежие законопроекты</h2>
+  <div class="strip" id="fresh"></div>
+</section>
 
 <main class="newslist" id="newslist"><div class="loading">Загрузка новостей…</div></main>
 
@@ -56,5 +63,6 @@ fetch("data/news.json").then(r => r.json()).then(news => {
   }).join("");
 }).catch(e => { document.getElementById("newslist").innerHTML = "<p>Ошибка загрузки новостей.</p>"; });
 </script>
+<script src="site-chrome.js"></script>
 </body>
 </html>
