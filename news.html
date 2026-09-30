@@ -33,6 +33,11 @@
     <div class="updated"><a href="index.html">← На главную</a> · <span id="updated"></span></div>
   </div>
 </header>
+<nav class="sitenav wrap">
+  <a href="index.html" class="off">📊 Главная</a>
+  <a href="news.html" class="on">📰 Новости</a>
+  <a href="investigations.html" class="off">🔍 Расследования</a>
+</nav>
 
 <section class="tiles wrap" id="tiles"></section>
 
@@ -65,5 +70,6 @@ fetch("data/news.json").then(r => r.json()).then(news => {
 }).catch(e => { document.getElementById("newslist").innerHTML = "<p>Ошибка загрузки новостей.</p>"; });
 </script>
 <script src="site-chrome.js"></script>
+<footer class="wrap"><p class="disclaimer">Независимый некоммерческий аналитический ресурс. Новости — из официальных RSS СМИ со ссылками на первоисточник. Оценка абсурдности — автоматическая по открытой методике. Персональные данные не собираются.</p></footer>
 </body>
 </html>

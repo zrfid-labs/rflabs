@@ -137,3 +137,7 @@ code{background:var(--card);padding:1px 6px;border-radius:6px}
 .dval{color:var(--mut);font-size:12px;white-space:nowrap}
 .dval b{color:#e8c88a;font-size:14px}
 .faction{color:var(--mut);font-size:11px;margin-left:4px}
+.sitenav{display:flex;gap:10px;padding:10px 16px 0;flex-wrap:wrap}
+.sitenav a{background:var(--card);border:1px solid var(--line);border-radius:9px;padding:6px 14px;color:var(--mut);font-size:13px}
+.sitenav a.on{background:var(--acc);color:#151007;border-color:var(--acc);font-weight:600}
+.sitenav a:hover{border-color:var(--acc);color:var(--txt)}

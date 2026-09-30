@@ -29,6 +29,11 @@
     <div class="updated"><a href="index.html">← На главную</a> · <span id="updated"></span></div>
   </div>
 </header>
+<nav class="sitenav wrap">
+  <a href="index.html" class="off">📊 Главная</a>
+  <a href="news.html" class="off">📰 Новости</a>
+  <a href="investigations.html" class="on">🔍 Расследования</a>
+</nav>
 
 <section class="tiles wrap" id="tiles"></section>
 
@@ -63,5 +68,6 @@ fetch("data/investigations.json").then(r => r.json()).then(data => {
 }).catch(e => { document.getElementById("list").innerHTML = "<p>Ошибка загрузки.</p>"; });
 </script>
 <script src="site-chrome.js"></script>
+<footer class="wrap"><p class="disclaimer">Агрегация открытых данных (ICIJ, декларации). Совпадение ФИО может означать однофамильца — проверяйте первоисточники. Не является обвинением или юридической консультацией.</p></footer>
 </body>
 </html>
